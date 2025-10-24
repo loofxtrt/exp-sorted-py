@@ -5,7 +5,6 @@ from helpers import * # geradores de id, leitores etc.
 from pathlib import Path
 from datetime import datetime
 from loguru import logger
-from yt_dlp import YoutubeDL
 
 def write_playlist(playlist_title: str, output_dir: Path):
     current_date = datetime.now().isoformat(timespec='seconds') # yyyy-mm-ddThh:mm:ss. o timespec é pra não incluir microsegundos

@@ -22,6 +22,10 @@ def set_parser():
     viewdir = subparsers.add_parser('viewdir', help='visualiza todas as playlists dentro de um diretório')
     viewdir.add_argument('dir', type=str, help='caminho do diretório a ser visualizado')
 
+    viewpl = subparsers.add_parser('viewpl', help='visualiza os conteúdos de uma playlist individual')
+    viewpl.add_argument('file', type=str, help='caminho do arquivo yaml da playlist a ser visualizada')
+    viewpl.add_argument('--descflag', '-df', action='store_true', help='se presente, a descrição do vídeo também será incluída na visualização')
+
     return parser
 
 def main():
@@ -46,6 +50,11 @@ def main():
     elif args.command == 'viewdir':
         visualizer.view_directory(
             dir=Path(args.dir)
+        )
+    elif args.command == 'viewpl':
+        visualizer.view_playlist(
+            playlist_file=Path(args.file),
+            description_flag=args.descflag
         )
 
 main()
