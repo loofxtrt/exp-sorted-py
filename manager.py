@@ -4,6 +4,7 @@ import random
 from pathlib import Path
 from datetime import date
 from loguru import logger
+from yt_dlp import YoutubeDL
 
 def generate_random_id(id_length: int = 6):
     # obter uma string com todas as letras do alfabeto (upper e lower)
@@ -40,6 +41,8 @@ def handle_existing_file(file_path: Path) -> bool:
     # se já não existir, não tem problema
     return True
 
+
+
 def write_playlist(playlist_title: str, output_dir: Path):
     current_date = date.today().isoformat() # obter a data em yyyy-mm-dd
     playlist_id = generate_random_id()
@@ -65,3 +68,25 @@ def write_playlist(playlist_title: str, output_dir: Path):
         yaml.safe_dump(data, f, allow_unicode=True)
     
     logger.success(f'arquivo criado em {str(final_path)}')
+
+def insert_video(playlist_file: Path, url: str):
+    # ler os dados atuais da playlist e adicionar a url solicitada ao array
+    with playlist_file.open('r', encoding='utf-8') as f:
+        data = yaml.safe_load(f)
+
+    # confirmação trivial pra evitar duplicação acidental de urls
+    # não quebra nada, só fica com o mesmo vídeo duas vezes na mesma playlist
+    if url in data['urls']:
+        answer = input(f'{url} já está presente nessa playlist, adicionar mesmo assim? (Y/n) ').strip().lower()
+        
+        if answer == 'n':
+            logger.info('inserção de vídeo cancelada')
+            return
+    
+    data['urls'].append(url)
+
+    # reescrever esses dados no mesmo arquivo
+    with playlist_file.open('w', encoding='utf-8') as f:
+        yaml.safe_dump(data, f, allow_unicode=True)
+    
+    logger.success(f'{url} adicionada na playlist {playlist_file.stem}')
