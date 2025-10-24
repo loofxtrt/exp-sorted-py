@@ -56,5 +56,4 @@ def yaml_write_playlist(playlist_file: Path, data_to_write: dict):
             stream=file,
             allow_unicode=True,
             indent=4,
-            default_flow_style=False # impedir listas inline
         )

@@ -1,4 +1,5 @@
 import manager
+import visualizer
 
 import argparse
 from pathlib import Path
@@ -17,6 +18,9 @@ def set_parser():
     remove = subparsers.add_parser('remove', help='remove um vídeo numa playlist')
     remove.add_argument('file', type=str, help='caminho do arquivo yaml da playlist')
     remove.add_argument('url', type=str, help='url do vídeo a ser removido')
+
+    viewdir = subparsers.add_parser('viewdir', help='visualiza todas as playlists dentro de um diretório')
+    viewdir.add_argument('dir', type=str, help='caminho do diretório a ser visualizado')
 
     return parser
 
@@ -38,6 +42,10 @@ def main():
         manager.remove_video(
             playlist_file=Path(args.file),
             url=args.url
+        )
+    elif args.command == 'viewdir':
+        visualizer.view_directory(
+            dir=Path(args.dir)
         )
 
 main()
