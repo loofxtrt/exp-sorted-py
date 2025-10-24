@@ -1,50 +1,14 @@
 import yaml
-import string
-import random
+
+from helpers import * # geradores de id, leitores etc.
+
 from pathlib import Path
-from datetime import date
+from datetime import datetime
 from loguru import logger
 from yt_dlp import YoutubeDL
 
-def generate_random_id(id_length: int = 6):
-    # obter uma string com todas as letras do alfabeto (upper e lower)
-    # e todos os digitos numéricos (0-9)
-    characters = string.ascii_letters + string.digits
-
-    # criar um id, atribuindo um índice aleatório do grupo de caracteres
-    # até que o comprimento total do id seja preenchido
-    final_id: str = ''
-    for i in range(id_length):
-        final_id += random.choice(characters)
-
-    logger.debug('novo id gerado: ' + final_id)
-    return final_id
-
-def handle_existing_file(file_path: Path) -> bool:
-    """
-    resolvedor de conflitos em casos onde um arquivo já existe
-    @param file_path: o caminh do arquivo que deve ser verificado pra ter certeza que já não existe outro igual
-    """
-    
-    # se o arquivo já existir, perguntar pro usuário se ele deve ser sobreescrito mesmo assim
-    # caso a resposta seja qualquer coisa diferente de 'sim', se assume que NÃO deve sobreescrever
-    if file_path.exists():
-        # resposta tratada sem espaços e sempre em lowercase
-        answer = input(f'o arquivo {file_path.name} já existe. prosseguir sobreescreverá ele, continuar? (y/N) ').strip().lower()
-        
-        # confirma a remoção, caso contrário, false
-        if answer == 'y':
-            return True
-        
-        return False
-    
-    # se já não existir, não tem problema
-    return True
-
-
-
 def write_playlist(playlist_title: str, output_dir: Path):
-    current_date = date.today().isoformat() # obter a data em yyyy-mm-dd
+    current_date = datetime.now().isoformat(timespec='seconds') # yyyy-mm-ddThh:mm:ss. o timespec é pra não incluir microsegundos
     playlist_id = generate_random_id()
 
     # construir o caminho final do arquivo    
@@ -64,15 +28,13 @@ def write_playlist(playlist_title: str, output_dir: Path):
         return
     
     # escrever os dados da playlist em um arquivo que a representa
-    with final_path.open('w', encoding='utf-8') as f:
-        yaml.safe_dump(data, f, allow_unicode=True)
+    yaml_write_playlist(final_path, data)
     
     logger.success(f'arquivo criado em {str(final_path)}')
 
 def insert_video(playlist_file: Path, url: str):
-    # ler os dados atuais da playlist e adicionar a url solicitada ao array
-    with playlist_file.open('r', encoding='utf-8') as f:
-        data = yaml.safe_load(f)
+    # ler os dados atuais da playlist
+    data = yaml_read_playlist(playlist_file)
 
     # confirmação trivial pra evitar duplicação acidental de urls
     # não quebra nada, só fica com o mesmo vídeo duas vezes na mesma playlist
@@ -82,11 +44,21 @@ def insert_video(playlist_file: Path, url: str):
         if answer == 'n':
             logger.info('inserção de vídeo cancelada')
             return
-    
-    data['urls'].append(url)
 
-    # reescrever esses dados no mesmo arquivo
-    with playlist_file.open('w', encoding='utf-8') as f:
-        yaml.safe_dump(data, f, allow_unicode=True)
+    # adicionar a url solicitada ao array e reescrever esses dados novos no mesmo arquivo
+    data['urls'].append(url)
+    yaml_write_playlist(playlist_file, data)
     
     logger.success(f'{url} adicionada na playlist {playlist_file.stem}')
+
+def remove_video(playlist_file: Path, url: str):
+    data = yaml_read_playlist(playlist_file)
+    
+    if url in data['urls']:
+        # remover o item da lista e atualizar os dados
+        data['urls'].remove(url)
+        yaml_write_playlist(playlist_file, data)
+        
+        logger.success(f'{url} removida da playlist {playlist_file.stem}')
+    else:
+        logger.info(f'{url} não está presente na playlist {playlist_file.stem}')

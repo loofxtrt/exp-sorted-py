@@ -1,4 +1,5 @@
 import manager
+
 import argparse
 from pathlib import Path
 
@@ -13,6 +14,10 @@ def set_parser():
     insert.add_argument('file', type=str, help='caminho do arquivo yaml da playlist')
     insert.add_argument('url', type=str, help='url do vídeo a ser adicionado')
 
+    remove = subparsers.add_parser('remove', help='remove um vídeo numa playlist')
+    remove.add_argument('file', type=str, help='caminho do arquivo yaml da playlist')
+    remove.add_argument('url', type=str, help='url do vídeo a ser removido')
+
     return parser
 
 def main():
@@ -26,6 +31,11 @@ def main():
         )
     elif args.command == 'insert':
         manager.insert_video(
+            playlist_file=Path(args.file),
+            url=args.url
+        )
+    elif args.command == 'remove':
+        manager.remove_video(
             playlist_file=Path(args.file),
             url=args.url
         )
