@@ -1,3 +1,5 @@
+# ESSA VERSÃO TINHA SUPORTE MÍNIMO AO AVATAR DO UPLOADER
+
 import json
 import helpers
 import settings
@@ -59,6 +61,7 @@ def write_video_cache(
     description = info.get('description')
     thumbnail = info.get('thumbnail')
     description = info.get('description')
+    uploader_thumbnail = info.get('uploader_thumbnail') # pfp do uploader
     
     # estruturar os dados obtidos em um objeto json
     video_data = {
@@ -69,6 +72,7 @@ def write_video_cache(
         'duration': duration,
         'description': description,
         'thumbnail': thumbnail,
+        'uploader_thumbnail': uploader_thumbnail
     }
 
     # ler o cache atual e adicionar o objeto dos dados do vídeo a essa lista do cache

@@ -41,8 +41,12 @@ def write_playlist(playlist_title: str, output_dir: Path):
     
     logger.success(f'arquivo criado em {str(final_path)}')
 
-def delete_playlist(playlist_file: Path):
-    answer = input(f'deletar {playlist_file.stem}? (y/N) ').strip().lower()
+def delete_playlist(playlist_file: Path, assume_yes = True):
+    if not assume_yes:
+        answer = input(f'deletar {playlist_file.stem}? (y/N) ').strip().lower()
+    else:
+        answer = 'y'
+    
     if answer == 'y':
         playlist_file.unlink()
         logger.success('playlist deletada')
@@ -50,7 +54,7 @@ def delete_playlist(playlist_file: Path):
     
     logger.info("exclusão de playlist cancelada")
 
-def insert_video(playlist_file: Path, urls: list[str]):
+def insert_video(playlist_file: Path, urls: list[str], assume_yes = True):
     """
     @param: urls
         lista de urls que devem ser inseridas na playlist
@@ -58,8 +62,11 @@ def insert_video(playlist_file: Path, urls: list[str]):
     """
 
     if not playlist_file.exists():
-        answer = input('essa playlist ainda não existe, criar ela agora? (Y/n) ').strip().lower()
-        
+        if not assume_yes:
+            answer = input('essa playlist ainda não existe, criar ela agora? (Y/n) ').strip().lower()
+        else:
+            answer = 'y'
+
         if answer == 'y':
             write_playlist(playlist_file.stem, playlist_file.parent)
         else:
@@ -76,8 +83,11 @@ def insert_video(playlist_file: Path, urls: list[str]):
         existing = is_entry_present(playlist_file, video_id)
 
         if existing:
-            answer = input(f'{url} já está presente nessa playlist, adicionar mesmo assim? (Y/n) ').strip().lower()
-            
+            if not assume_yes:
+                answer = input(f'{url} já está presente nessa playlist, adicionar mesmo assim? (Y/n) ').strip().lower()
+            else:
+                answer = 'y'
+
             if answer == 'n':
                 logger.info('inserção de vídeo cancelada')
                 return

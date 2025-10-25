@@ -1,3 +1,5 @@
+# ESSA VERSÃO NÃO SUPORTAVA THUMBNAIL E PFP DO UPLOADER
+
 import json
 import helpers
 import settings
@@ -57,8 +59,6 @@ def write_video_cache(
     view_count = info.get('view_count')
     duration = info.get('duration', 0) # segundos. 0 é fallback se o campo não estiver presente
     description = info.get('description')
-    thumbnail = info.get('thumbnail')
-    description = info.get('description')
     
     # estruturar os dados obtidos em um objeto json
     video_data = {
@@ -68,7 +68,6 @@ def write_video_cache(
         'view_count': view_count,
         'duration': duration,
         'description': description,
-        'thumbnail': thumbnail,
     }
 
     # ler o cache atual e adicionar o objeto dos dados do vídeo a essa lista do cache

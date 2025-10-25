@@ -160,7 +160,7 @@ def view_playlist(playlist_file: Path, description_flag: bool = False):
     table.add_column('Views')
     table.add_column('Upload date')
 
-    for video in data['entries']:
+    for video in data.get('entries'):
         # pra cada video presente no arquivo, criar um row na tabela com essas informações
         #video_id = helpers.extract_youtube_video_id(video.get('url'))
         video_id = video.get('id')
