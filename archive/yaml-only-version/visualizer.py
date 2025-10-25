@@ -120,13 +120,20 @@ def view_directory(dir: Path):
 
     # verificar cada arquivo dentro do diretório e inserir os dados dele na tabela
     for f in dir.iterdir():
-        if not f.is_file() or not f.suffix == '.json':
+        if not f.is_file():
             continue
         
+        # FIXME: isso tá ignorando todos os arquivos
+        #if f.suffix not in ('.yml', '.yaml'):
+        #    # aqui se usa not in em vez de dois if not,
+        #    # pq se o sufixo for yml, mas não yaml, vai dar falso e vice-versa
+        #    # isso verifica se UM DOS DOIS é o sufixo 
+        #    continue
+        
         # obter os dados da playlist e extrai-los
-        data = json_read_playlist(f)
+        data = yaml_read_playlist(f)
         title = f.stem
-        video_count = str(len(data['entries']))
+        video_count = str(len(data['urls']))
         creation_date = data['created-at']
         playlist_id = data['id']
 
@@ -144,7 +151,7 @@ def view_playlist(playlist_file: Path, description_flag: bool = False):
         se a descrição deve ou não ser incluída na visuazaliação
     """
 
-    data = json_read_playlist(playlist_file)
+    data = yaml_read_playlist(playlist_file)
 
     # tabela com um título equivalente ao nome do arquivo, mas sem extensão
     table = make_table(playlist_file.stem)
@@ -160,9 +167,8 @@ def view_playlist(playlist_file: Path, description_flag: bool = False):
         'skip_download': True
     }
 
-    for video in data['entries']:
-        # pra cada video presente no arquivo, criar um row na tabela com essas informações
-        url = video.get("url")
+    for url in data['urls']:
+        # pra cada url presente no arquivo, criar um row na tabela com essas informações
         make_video_row(table, url, ytdl_opts, include_description=description_flag)
 
     console = Console()

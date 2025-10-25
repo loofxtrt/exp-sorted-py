@@ -1,5 +1,4 @@
-#import yaml
-import json
+import yaml
 import string
 import random
 from pathlib import Path
@@ -27,7 +26,7 @@ def generate_random_id(id_length: int = 8):
 def handle_existing_file(file_path: Path) -> bool:
     """
     resolvedor de conflitos em casos onde um arquivo já existe
-    @param file_path: o caminho do arquivo que deve ser verificado pra ter certeza que já não existe outro igual
+    @param file_path: o caminh do arquivo que deve ser verificado pra ter certeza que já não existe outro igual
     """
     
     # se o arquivo já existir, perguntar pro usuário se ele deve ser sobreescrito mesmo assim
@@ -45,42 +44,21 @@ def handle_existing_file(file_path: Path) -> bool:
     # se já não existir, não tem problema
     return True
 
-def json_read_playlist(playlist_file: Path):
-    """
-    lê e retorna os dados dentro de um arquivo que representa uma playlist
-    """
-    with playlist_file.open('r', encoding='utf-8') as f:
-        data = json.load(f)
-
-        # se não achar nenhum dado, o arquivo tá vazio
+def yaml_read_playlist(playlist_file: Path):
+    with playlist_file.open('r', encoding='utf-8') as file:
+        data = yaml.safe_load(file)
+        
+        # se o arquivo estiver vazio, ele vira um dict, se não daria erro
         if data is None:
-            logger.erro(f'o arquivo {playlist_file} está vazio ou corrompido')
-
+            data = {}
+    
     return data
 
-def json_write_playlist(playlist_file: Path, data_to_write: dict):
-    """
-    escreve dados estruturados como um dicionário em um arquivo que representa uma playlist
-    """
-
-    with playlist_file.open('w', encoding='utf-8') as f:
-        json.dump(data_to_write, f, indent=4)
-
-# def yaml_read_playlist(playlist_file: Path):
-#     with playlist_file.open('r', encoding='utf-8') as file:
-#         data = yaml.safe_load(file)
-        
-#         # se o arquivo estiver vazio, ele vira um dict, se não daria erro
-#         if data is None:
-#             data = {}
-    
-#     return data
-
-# def yaml_write_playlist(playlist_file: Path, data_to_write: dict):
-#     with playlist_file.open('w', encoding='utf-8') as file:
-#         yaml.safe_dump(
-#             data_to_write,
-#             stream=file,
-#             allow_unicode=True,
-#             indent=4,
-#         )
+def yaml_write_playlist(playlist_file: Path, data_to_write: dict):
+    with playlist_file.open('w', encoding='utf-8') as file:
+        yaml.safe_dump(
+            data_to_write,
+            stream=file,
+            allow_unicode=True,
+            indent=4,
+        )
