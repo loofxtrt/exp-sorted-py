@@ -1,4 +1,3 @@
-#import yaml
 import json
 import string
 import random
@@ -63,24 +62,7 @@ def json_write_playlist(playlist_file: Path, data_to_write: dict):
     escreve dados estruturados como um dicionário em um arquivo que representa uma playlist
     """
 
+    data_to_write['last-modified-at'] = get_iso_datetime()
+
     with playlist_file.open('w', encoding='utf-8') as f:
         json.dump(data_to_write, f, indent=4)
-
-# def yaml_read_playlist(playlist_file: Path):
-#     with playlist_file.open('r', encoding='utf-8') as file:
-#         data = yaml.safe_load(file)
-        
-#         # se o arquivo estiver vazio, ele vira um dict, se não daria erro
-#         if data is None:
-#             data = {}
-    
-#     return data
-
-# def yaml_write_playlist(playlist_file: Path, data_to_write: dict):
-#     with playlist_file.open('w', encoding='utf-8') as file:
-#         yaml.safe_dump(
-#             data_to_write,
-#             stream=file,
-#             allow_unicode=True,
-#             indent=4,
-#         )

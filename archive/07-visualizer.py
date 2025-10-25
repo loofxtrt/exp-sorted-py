@@ -1,3 +1,5 @@
+# ESSA VERSÃO MANTÉM OS COMENTÁRIOS DE DEFINIÇÃO DE TÍTULO DOS PAINEIS
+
 from helpers import *
 
 from rich.console import Console
@@ -164,8 +166,8 @@ def view_playlist(playlist_file: Path, description_flag: bool = False):
 
     data = json_read_playlist(playlist_file)
 
-    # tabela de todos os vídeos da playlists
-    table = make_table()
+    # tabela com um título equivalente ao nome do arquivo (a playlist), mas sem extensão
+    table = make_table()#f'[dim]Videos in {playlist_file.stem}[/]')
 
     table.add_column('Title')
     table.add_column('Uploader')
@@ -191,6 +193,7 @@ def view_playlist(playlist_file: Path, description_flag: bool = False):
     
     panel = Panel(
         f'Title: {playlist_file.stem}\nContains: {contains}',
+        #title='Playlist info',
         box=box.ROUNDED,
         border_style='dim',
         width=STANDARD_PANEL_WIDTH
