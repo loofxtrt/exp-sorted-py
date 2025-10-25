@@ -1,16 +1,14 @@
-import settings
-from helpers import json_read_playlist, json_write_playlist, get_iso_datetime, generate_random_id, extract_youtube_video_id, handle_existing_file, build_youtube_url
+from helpers import * # geradores de id, leitores etc.
 
-from yt_dlp import YoutubeDL
 from pathlib import Path
 from loguru import logger
 
-def is_entry_present(playlist_file: Path, video_id: str):
+def is_entry_present(playlist_file: Path, target_url: str):
     data = json_read_playlist(playlist_file)
 
     # se existir um dicionário na lista de entries
     # que contenha uma url idêntica a target passada pra função, é true
-    if any(entry['id'] == video_id for entry in data['entries']):
+    if any(entry['url'] == target_url for entry in data['entries']):
         return True
     
     return False
@@ -69,11 +67,9 @@ def insert_video(playlist_file: Path, urls: list[str]):
     data = json_read_playlist(playlist_file)
 
     for url in urls:
-        video_id = extract_youtube_video_id(url)
-
         # confirmação trivial pra evitar duplicação acidental de urls
         # não quebra nada, só fica com o mesmo vídeo duas vezes na mesma playlist
-        existing = is_entry_present(playlist_file, video_id)
+        existing = is_entry_present(playlist_file, url)
 
         if existing:
             answer = input(f'{url} já está presente nessa playlist, adicionar mesmo assim? (Y/n) ').strip().lower()
@@ -87,9 +83,8 @@ def insert_video(playlist_file: Path, urls: list[str]):
         current_date = get_iso_datetime()
         
         # montar o objeto que representa uma entrada de vídeo
-        video = {            
-            'id': video_id,
-            #'url': build_youtube_url(video_id),
+        video = {
+            'url': url,
             'inserted-at': current_date
         }
 
@@ -101,17 +96,15 @@ def insert_video(playlist_file: Path, urls: list[str]):
 
 def remove_video(playlist_file: Path, urls: list[str]):
     data = json_read_playlist(playlist_file)
-
+    
     for url in urls:
         # pra cada url alvo, faz uma verificação no campo de entradas de cada playlist
-        video_id = extract_youtube_video_id(url)
-
         for i, entry in enumerate(data['entries']):
             # se a url alvo de remoção estiver presente em um desses campos,
             # remove o índice do dicionário a qual ela pertence e atualiza os dados
             # e depois quebra o loop pra parar na primeira ocorrência
             # se mais de um link for passado pra função, mesmo sendo dois iguais, vão ser duas ocorrências iguais removidas
-            if entry['id'] == video_id:
+            if entry['url'] == url:
                 removed = data['entries'].pop(i)
                 json_write_playlist(playlist_file, data)
 
@@ -120,14 +113,3 @@ def remove_video(playlist_file: Path, urls: list[str]):
         else:
             # o else só roda se o break não tiver rodado nenhuma vez
             logger.info(f'{url} não está presente na playlist {playlist_file.stem}')
-
-def import_playlist(new_title: str, output_dir: Path, youtube_playlist_url: str, ytdlp_options: dict = settings.YTDLP_OPTIONS):
-    with YoutubeDL(ytdlp_options) as ytdl:
-        info = ytdl.extract_info(youtube_playlist_url, download=False)
-    
-    # obter todas as urls de vídeos do campo 'entries' da playlist
-    urls = [entry['webpage_url'] for entry in info['entries'] if entry]
-    
-    final_path = output_dir / (new_title + '.json')
-    write_playlist(new_title, output_dir)
-    insert_video(final_path, urls)

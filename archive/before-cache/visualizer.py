@@ -1,5 +1,4 @@
-import cache
-import helpers
+from helpers import *
 
 from rich.console import Console
 from rich.table import Table
@@ -7,7 +6,7 @@ from rich.panel import Panel
 from rich import box # pra controlar a espessura das bordas das tabelas
 from pathlib import Path
 from loguru import logger
-#from yt_dlp import YoutubeDL
+from yt_dlp import YoutubeDL
 from datetime import datetime, timedelta
 
 # largura de todos os painéis do rich (sejam eles tabelas, paineis comuns etc.)
@@ -35,9 +34,19 @@ def make_table(title: str = None, width: int = STANDARD_PANEL_WIDTH):
     
     return table
 
+def truncate_text(text: str, max_characters: int):
+    if len(text) > max_characters:
+        # se o texto passado for realmente maior do que o permitido,
+        # corta os caracteres do índice 0 até o limite e adiciona um sinalizador no final (ex: ...)
+        # é a mesma coisa que [0:max_chars], mas com o 0 omitido
+        text = text[:max_characters - 3] + '...'
+
+    return text
+
 def make_video_row(
         target_table: Table,
-        video_id: str,
+        url: str,
+        ytdlp_options: dict,
         include_description: bool = False,
         truncate_title: bool = True,
         truncate_desc: bool = True,
@@ -48,9 +57,12 @@ def make_video_row(
     @param target_table:
         a tabela em que o novo row vai ser inserido
 
-    @param video_id:
-        id do vídeo que deve ter suas informações exibidas
+    @param url:
+        url do vídeo que deve ter suas informações exibidas
     
+    @param ytdlp_options:
+        opções da api do yt-dlp
+
     @param include_description:
         se a descrição deve ou não ser incluída na visualização
         caso seja true, pode ficar com informações demais na tabela, por isso é false por padrão
@@ -68,17 +80,20 @@ def make_video_row(
         quantos caracteres a descrição pode ter antes de ser truncada
     """
 
-    data = cache.get_video_info(video_id)
+    # obter as informações do vídeo usando as opções previamente definidas
+    # o download do vídeo em si é ignorado
+    with YoutubeDL(ytdlp_options) as ytdl:
+        info = ytdl.extract_info(url, download=False)
 
-    title = data.get('title')
-    upload_date = data.get('upload_date')
-    uploader = data.get('uploader')
-    view_count = str(data.get('view_count'))
-    duration = data.get('duration', 0) # valor em segundos. o 0 é um fallback caso esse campo não esteja presente
+    title = info.get('title')
+    upload_date = info.get('upload_date')
+    uploader = info.get('uploader')
+    view_count = str(info.get('view_count'))
+    duration = info.get('duration', 0) # valor em segundos. o 0 é um fallback caso esse campo não esteja presente
 
     # formatar o título
     if truncate_title:
-        title = helpers.truncate_text(title, title_max)
+        title = truncate_text(title, title_max)
 
     # formatar a descrição
     if include_description:
@@ -86,7 +101,7 @@ def make_video_row(
         # [dim] faz a desc ficar com a cor mais fraca
         description = info.get('description')
         if truncate_desc:
-            description = helpers.truncate_text(description, desc_max)
+            description = truncate_text(description, desc_max)
 
         # unir os dois
         title = f'{title}\n[dim]{description}[/dim]'
@@ -109,14 +124,12 @@ def make_video_row(
     )
 
 def view_directory(dir: Path):
-    """visualiza um diretório que contém múltiplas playlists"""
-    
     if not dir.is_dir():
         logger.error('o caminho não é um diretório')
         return
 
     # criação da tabela
-    table = make_table()
+    table = make_table(dir.name)
     
     table.add_column('Title')
     table.add_column('Video count')
@@ -129,7 +142,7 @@ def view_directory(dir: Path):
             continue
         
         # obter os dados da playlist e extrai-los
-        data = helpers.json_read_playlist(f)
+        data = json_read_playlist(f)
         title = f.stem
         video_count = str(len(data['entries']))
         creation_date = data['created-at']
@@ -149,7 +162,7 @@ def view_playlist(playlist_file: Path, description_flag: bool = False):
         se a descrição deve ou não ser incluída na visuazaliação
     """
 
-    data = helpers.json_read_playlist(playlist_file)
+    data = json_read_playlist(playlist_file)
 
     # tabela de todos os vídeos da playlists
     table = make_table()
@@ -160,11 +173,16 @@ def view_playlist(playlist_file: Path, description_flag: bool = False):
     table.add_column('Views')
     table.add_column('Upload date')
 
+    # definir as opções do ytdl
+    ytdl_opts = {
+        'quiet': True,
+        'skip_download': True
+    }
+
     for video in data['entries']:
         # pra cada video presente no arquivo, criar um row na tabela com essas informações
-        #video_id = helpers.extract_youtube_video_id(video.get('url'))
-        video_id = video.get('id')
-        make_video_row(table, video_id, include_description=description_flag)
+        url = video.get("url")
+        make_video_row(table, url, ytdl_opts, include_description=description_flag)
 
     # painel com informações extras da playlist sendo visualizada
     # contém lógica pra usar plural ou singular de 'vídeos' caso tenha menos ou mais de um

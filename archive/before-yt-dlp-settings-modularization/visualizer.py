@@ -116,7 +116,7 @@ def view_directory(dir: Path):
         return
 
     # criação da tabela
-    table = make_table()
+    table = make_table(dir.name)
     
     table.add_column('Title')
     table.add_column('Video count')
@@ -162,8 +162,7 @@ def view_playlist(playlist_file: Path, description_flag: bool = False):
 
     for video in data['entries']:
         # pra cada video presente no arquivo, criar um row na tabela com essas informações
-        #video_id = helpers.extract_youtube_video_id(video.get('url'))
-        video_id = video.get('id')
+        video_id = helpers.extract_youtube_video_id(video.get('url'))
         make_video_row(table, video_id, include_description=description_flag)
 
     # painel com informações extras da playlist sendo visualizada

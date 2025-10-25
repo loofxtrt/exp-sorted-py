@@ -80,7 +80,7 @@ def json_read_playlist(playlist_file: Path):
 
         # se não achar nenhum dado, o arquivo tá vazio
         if data is None:
-            logger.error(f'o arquivo {playlist_file} está vazio ou corrompido')
+            logger.erro(f'o arquivo {playlist_file} está vazio ou corrompido')
 
     return data
 

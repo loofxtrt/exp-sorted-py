@@ -1,36 +1,9 @@
 import json
 import string
 import random
-import settings
 from pathlib import Path
 from loguru import logger
 from datetime import datetime
-
-from urllib.parse import urlparse, parse_qs
-
-def build_youtube_url(video_id: str):
-    """reconstrói uma url do youtube a partir do id de um vídeo"""
-
-    return f'https://www.youtube.com/watch?v={video_id}'
-
-def extract_youtube_video_id(url: str):
-    """extrai o id de um vídeo por uma url do youtube"""
-
-    query = urlparse(url)
-    if query.hostname in ('www.youtube.com', 'youtube.com'):
-        return parse_qs(query.query).get('v', [None])[0]
-    elif query.hostname == 'youtu.be':
-        return query.path.lstrip('/')
-    return None
-
-def truncate_text(text: str, max_characters: int):
-    if len(text) > max_characters:
-        # se o texto passado for realmente maior do que o permitido,
-        # corta os caracteres do índice 0 até o limite e adiciona um sinalizador no final (ex: ...)
-        # é a mesma coisa que [0:max_chars], mas com o 0 omitido
-        text = text[:max_characters - 3] + '...'
-
-    return text
 
 def get_iso_datetime():
     # yyyy-mm-ddThh:mm:ss. o timespec é pra não incluir microsegundos
@@ -53,7 +26,6 @@ def generate_random_id(id_length: int = 8):
 def handle_existing_file(file_path: Path) -> bool:
     """
     resolvedor de conflitos em casos onde um arquivo já existe
-
     @param file_path: o caminho do arquivo que deve ser verificado pra ter certeza que já não existe outro igual
     """
     
@@ -73,35 +45,24 @@ def handle_existing_file(file_path: Path) -> bool:
     return True
 
 def json_read_playlist(playlist_file: Path):
-    """lê e retorna os dados dentro de um arquivo que representa uma playlist"""
-
+    """
+    lê e retorna os dados dentro de um arquivo que representa uma playlist
+    """
     with playlist_file.open('r', encoding='utf-8') as f:
         data = json.load(f)
 
         # se não achar nenhum dado, o arquivo tá vazio
         if data is None:
-            logger.error(f'o arquivo {playlist_file} está vazio ou corrompido')
+            logger.erro(f'o arquivo {playlist_file} está vazio ou corrompido')
 
     return data
 
 def json_write_playlist(playlist_file: Path, data_to_write: dict):
-    """escreve dados estruturados como um dicionário em um arquivo que representa uma playlist"""
+    """
+    escreve dados estruturados como um dicionário em um arquivo que representa uma playlist
+    """
 
     data_to_write['last-modified-at'] = get_iso_datetime()
 
     with playlist_file.open('w', encoding='utf-8') as f:
         json.dump(data_to_write, f, indent=4)
-
-def json_read_cache(cache_file: Path = settings.CACHE_FILE):
-    """lê o arquivo de cache atual e retorna o seu conteúdo"""
-    
-    if not cache_file.exists() or cache_file.stat().st_size == 0:
-        # se o arquivo ainda não existir ou estiver vazio, cria um objeto vazio como fallback
-        # stat = propriedades do arquivo, st_size = tamanho em bytes. se for 0, tá vazio
-        current_cache = {}
-    else:
-        # caso o arquivo esteja em condições normais, só lê direto
-        with cache_file.open('r', encoding='utf-8') as f:
-            current_cache = json.load(f)
-
-    return current_cache

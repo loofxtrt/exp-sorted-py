@@ -1,7 +1,6 @@
-import settings
 from helpers import json_read_playlist, json_write_playlist, get_iso_datetime, generate_random_id, extract_youtube_video_id, handle_existing_file, build_youtube_url
 
-from yt_dlp import YoutubeDL
+from YoutubeDL import yt_dlp
 from pathlib import Path
 from loguru import logger
 
@@ -121,13 +120,5 @@ def remove_video(playlist_file: Path, urls: list[str]):
             # o else só roda se o break não tiver rodado nenhuma vez
             logger.info(f'{url} não está presente na playlist {playlist_file.stem}')
 
-def import_playlist(new_title: str, output_dir: Path, youtube_playlist_url: str, ytdlp_options: dict = settings.YTDLP_OPTIONS):
-    with YoutubeDL(ytdlp_options) as ytdl:
-        info = ytdl.extract_info(youtube_playlist_url, download=False)
-    
-    # obter todas as urls de vídeos do campo 'entries' da playlist
-    urls = [entry['webpage_url'] for entry in info['entries'] if entry]
-    
-    final_path = output_dir / (new_title + '.json')
-    write_playlist(new_title, output_dir)
-    insert_video(final_path, urls)
+def import_playlist(youtube_playlist_url: str):
+    with YoutubeDL()
