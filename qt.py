@@ -100,6 +100,11 @@ def main(playlist_file: Path):
         thumbnail = video_data.get('thumbnail')
         duration = video_data.get('duration')
 
+        # formatar os metadados numéricos
+        upload_date = helpers.format_upload_date(upload_date)
+        duration = helpers.format_duration(seconds=duration)
+        view_count = helpers.format_view_count(view_count)
+
         container_video_entry = build_video_widget(
             title=title,
             #description=description,

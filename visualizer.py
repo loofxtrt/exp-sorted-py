@@ -91,13 +91,10 @@ def make_video_row(
         # unir os dois
         title = f'{title}\n[dim]{description}[/dim]'
 
-    # formatar a data de upload
-    # ela originalmente vem como 20251024
-    # isso converte ela pra um objeto de datetime, depois de volta pra string reformatada
-    upload_date = datetime.strptime(upload_date, '%Y%m%d').strftime('%Y-%m-%d')
-
-    # formatar a duração
-    duration = str(timedelta(seconds=duration)) # hh:mm:ss
+    # formatar os metadados numéricos
+    upload_date = helpers.format_upload_date(upload_date)
+    duration = helpers.format_duration(seconds=duration)
+    view_count = helpers.format_view_count(view_count)
 
     # adicionar as informações finais a tabela em um novo row
     target_table.add_row(

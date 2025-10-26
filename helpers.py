@@ -5,8 +5,35 @@ import settings
 from pathlib import Path
 from loguru import logger
 from datetime import datetime
+from datetime import timedelta
+from numerize.numerize import numerize
 
 from urllib.parse import urlparse, parse_qs
+
+def format_upload_date(upload_date: str):
+    # a data do yt-dlp originalmente vem como a string '20251026'
+    # pra manipular ela, primeiro precisa converter a string pra um formato de datetime
+    # ex: (2025, 10, 26, 0, 0)
+    upload_date = datetime.strptime(upload_date, '%Y%m%d')
+
+    # depois, reformata esse agora objeto de datetime, pra uma string de volta
+    # b: mês por extenso abreviado
+    # -d: número do dia sem um padding zero a esquerda
+    # (https://docs.python.org/3/library/datetime.html#strftime-and-strptime-behavior)
+    return datetime.strftime(upload_date, '%b %-d, %Y').capitalize()
+
+def format_view_count(view_count: int):
+    return numerize(view_count, decimals=0)
+
+def format_duration(seconds: int):
+    duration = str(timedelta(seconds=seconds)) # hh:mm:ss
+    
+    # remover a primeira parte (hh:) se o vídeo tiver menos de 1 hora
+    # portanto, essa parte não é necessária
+    if duration[0] == '0':
+        duration = duration[2:]
+
+    return duration
 
 def build_youtube_url(video_id: str):
     """reconstrói uma url do youtube a partir do id de um vídeo"""
