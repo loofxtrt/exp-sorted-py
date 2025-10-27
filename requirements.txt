@@ -1,7 +1,17 @@
+certifi==2025.10.5
+charset-normalizer==3.4.4
+idna==3.11
 loguru==0.7.3
 markdown-it-py==4.0.0
 mdurl==0.1.2
+numerize==0.12
+pillow==12.0.0
 Pygments==2.19.2
+PyQt6==6.10.0
+PyQt6-Qt6==6.10.0
+PyQt6_sip==13.10.2
 PyYAML==6.0.3
+requests==2.32.5
 rich==14.2.0
+urllib3==2.5.0
 yt-dlp==2025.10.22

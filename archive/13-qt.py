@@ -1,3 +1,5 @@
+# ESSA VERSÃO SUPORTAVA MINIMAMENTE HYPERLINKS NOS TÍTULOS
+
 import helpers
 import cache
 import requests
@@ -6,7 +8,6 @@ from loguru import logger
 from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QLabel, QHBoxLayout, QWidget
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QPixmap
-from colorthief import ColorThief
 
 def build_video_widget(video_id: str, uploader: str, title: str, view_count: int, upload_date: str, thumbnail_url: str, duration: int, description: str = None) -> QWidget:
     thumb_width = int(1280 / 7)
@@ -33,10 +34,12 @@ def build_video_widget(video_id: str, uploader: str, title: str, view_count: int
     # labels de informações textuais e metadados sobre o vídeo
     label_uploader_name = QLabel(uploader)
     label_title = QLabel(title)
+    #label_title = QLabel(f'<a href="{helpers.build_youtube_url(video_id)}" style="color: white; text-decoration: none; font-weight: bold;">{title}</a>')
     label_description = QLabel(description)
     label_views_uploaddate_duration = QLabel(f'{view_count} views • {upload_date} • {duration}')
 
     # configurações adicionais desses labels
+    #label_title.setOpenExternalLinks(True)
     label_title.setStyleSheet('font-weight: bold')
     label_description.setProperty('class', 'faint')
     label_uploader_name.setProperty('class', 'faint')
@@ -68,15 +71,15 @@ def build_video_widget(video_id: str, uploader: str, title: str, view_count: int
 def set_stylesheet(app: QApplication):
     app.setStyleSheet("""
     * {
-        color: white;
+        color: white
     }
 
     .faint {
-        color: #aaaaaa;
+        color: #aaaaaa
     }
     
     QMainWindow {
-        background-color: #15161d;
+        background-color: #0f0f0f;
     }
     """)
 
@@ -84,10 +87,7 @@ def main(playlist_file: Path):
     app = QApplication([])
 
     # vbox que é responsável por ordenar verticalmente todas as entradas de vídeo como em uma lista
-    # precisa de um container pra depois poder se adicionada a tela como widget em vez de layout puro
-    playlist_vbox = QVBoxLayout()
-    playlist_widget = QWidget()
-    playlist_widget.setLayout(playlist_vbox)
+    vbox_main = QVBoxLayout()
 
     # nessa vbox, adicionar as entradas de vídeos
     data = helpers.json_read_playlist(playlist_file)
@@ -96,7 +96,7 @@ def main(playlist_file: Path):
         video_data = cache.get_video_info(video_id)
 
         title = video_data.get('title')
-        #description = helpers.truncate_text(video_data.get('description'), 80)
+        description = video_data.get('description')
         uploader = video_data.get('uploader')
         view_count = video_data.get('view_count')
         upload_date = video_data.get('upload_date')
@@ -119,29 +119,11 @@ def main(playlist_file: Path):
             duration=duration
         )
         
-        playlist_vbox.addWidget(container_video_entry)
-    
-    # barra lateral com informações da playlist sendo atualmente visualizada
-    # segue a mesma lógica da vbox dos vídeo, por isso precisa de um container
-    sidebar_vbox = QVBoxLayout()
+        vbox_main.addWidget(container_video_entry)
 
-    playlist_title = playlist_file.stem
-    title_label = QLabel(playlist_title)
-    sidebar_vbox.addWidget(title_label)
-
-    sidebar_widget = QWidget()
-    sidebar_widget.setFixedWidth(300)
-    sidebar_widget.setStyleSheet('background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #252632, stop: 1 #1f202a)')
-    sidebar_widget.setLayout(sidebar_vbox)
-
-    # somar os dois elementos principais (sidebar e lista de vídeos) num layout só
-    main_hbox = QHBoxLayout()
-    main_hbox.addWidget(sidebar_widget)
-    main_hbox.addWidget(playlist_widget)
-
-    # criar um widget central, responsável por ser o parent conteúdo principal
+    # criar um widget central, responsável por ser o parent da vbox principal anteriormente criada
     central_widget = QWidget()
-    central_widget.setLayout(main_hbox)
+    central_widget.setLayout(vbox_main)
 
     # criar, exibir a janela e definir o widget central
     main_window = QMainWindow()

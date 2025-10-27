@@ -1,3 +1,5 @@
+# ESSA VERSÃO USAVA AS CORES DA UI DO YOUTUBE
+
 import helpers
 import cache
 import requests
@@ -76,7 +78,7 @@ def set_stylesheet(app: QApplication):
     }
     
     QMainWindow {
-        background-color: #15161d;
+        background-color: #0f0f0f;
     }
     """)
 
@@ -131,7 +133,7 @@ def main(playlist_file: Path):
 
     sidebar_widget = QWidget()
     sidebar_widget.setFixedWidth(300)
-    sidebar_widget.setStyleSheet('background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #252632, stop: 1 #1f202a)')
+    sidebar_widget.setStyleSheet('background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #252525, stop: 1 #515151)')
     sidebar_widget.setLayout(sidebar_vbox)
 
     # somar os dois elementos principais (sidebar e lista de vídeos) num layout só

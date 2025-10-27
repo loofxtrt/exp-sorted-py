@@ -43,6 +43,9 @@ def build_youtube_url(video_id: str):
 def extract_youtube_video_id(url: str):
     """extrai o id de um vídeo por uma url do youtube"""
 
+    if not url.startswith(('http://', 'https://')):
+        url = 'https://' + url # adiciona esquema se faltar
+
     query = urlparse(url)
     if query.hostname in ('www.youtube.com', 'youtube.com'):
         return parse_qs(query.query).get('v', [None])[0]

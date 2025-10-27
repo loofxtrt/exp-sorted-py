@@ -1,3 +1,5 @@
+# ESSA VERSÃO TINHA SUPORTE TESTE AO COLORTHIEF
+
 import helpers
 import cache
 import requests
@@ -76,7 +78,7 @@ def set_stylesheet(app: QApplication):
     }
     
     QMainWindow {
-        background-color: #15161d;
+        background-color: #0f0f0f;
     }
     """)
 
@@ -90,8 +92,10 @@ def main(playlist_file: Path):
     playlist_widget.setLayout(playlist_vbox)
 
     # nessa vbox, adicionar as entradas de vídeos
+    first_thumbnail = ''
+
     data = helpers.json_read_playlist(playlist_file)
-    for video in data.get('entries'):
+    for i, video in enumerate(data.get('entries')):
         video_id = video.get('id')
         video_data = cache.get_video_info(video_id)
 
@@ -120,18 +124,18 @@ def main(playlist_file: Path):
         )
         
         playlist_vbox.addWidget(container_video_entry)
+
+        if i == 0:
+            first_thumbnail = thumbnail
     
     # barra lateral com informações da playlist sendo atualmente visualizada
     # segue a mesma lógica da vbox dos vídeo, por isso precisa de um container
     sidebar_vbox = QVBoxLayout()
-
-    playlist_title = playlist_file.stem
-    title_label = QLabel(playlist_title)
-    sidebar_vbox.addWidget(title_label)
-
     sidebar_widget = QWidget()
     sidebar_widget.setFixedWidth(300)
-    sidebar_widget.setStyleSheet('background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #252632, stop: 1 #1f202a)')
+    ct = ColorThief('/mnt/seagate/workspace/coding/experimental/exp-sorted-py/placeholders/2025-10-26_14-20.png')
+    rgb_to_hex = lambda rgb: '#{:02X}{:02X}{:02X}'.format(*rgb)
+    sidebar_widget.setStyleSheet(f'background-color: {rgb_to_hex(ct.get_color(quality=1))}')
     sidebar_widget.setLayout(sidebar_vbox)
 
     # somar os dois elementos principais (sidebar e lista de vídeos) num layout só
