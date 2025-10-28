@@ -69,6 +69,7 @@ def make_video_row(
     """
 
     data = cache.get_video_info(video_id)
+    if not data: return
 
     title = data.get('title')
     upload_date = data.get('upload_date')
@@ -105,10 +106,10 @@ def make_video_row(
         upload_date
     )
 
-def view_directory(dir: Path):
+def view_directory(directory: Path):
     """visualiza um diretório que contém múltiplas playlists"""
     
-    if not dir.is_dir():
+    if not directory.is_dir():
         logger.error('o caminho não é um diretório')
         return
 
@@ -121,7 +122,7 @@ def view_directory(dir: Path):
     table.add_column('ID')
 
     # verificar cada arquivo dentro do diretório e inserir os dados dele na tabela
-    for f in dir.iterdir():
+    for f in directory.iterdir():
         if not f.is_file() or not f.suffix == '.json':
             continue
         
@@ -138,11 +139,11 @@ def view_directory(dir: Path):
     console = Console()
     console.print(table)
 
-def view_playlist(playlist_file: Path, description_flag: bool = False):
+def view_playlist(playlist_file: Path, show_description: bool = False):
     """
     visualiza em detalhes uma playlist individual, exibindo quais vídos estão nela
 
-    @param description_flag:
+    @param show_description:
         se a descrição deve ou não ser incluída na visuazaliação
     """
 
@@ -161,7 +162,7 @@ def view_playlist(playlist_file: Path, description_flag: bool = False):
         # pra cada video presente no arquivo, criar um row na tabela com essas informações
         #video_id = helpers.extract_youtube_video_id(video.get('url'))
         video_id = video.get('id')
-        make_video_row(table, video_id, include_description=description_flag)
+        make_video_row(table, video_id, include_description=show_description)
 
     # painel com informações extras da playlist sendo visualizada
     # contém lógica pra usar plural ou singular de 'vídeos' caso tenha menos ou mais de um

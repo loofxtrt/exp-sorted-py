@@ -7,6 +7,7 @@ from loguru import logger
 from datetime import datetime
 from datetime import timedelta
 from numerize.numerize import numerize
+from yt_dlp import YoutubeDL
 
 from urllib.parse import urlparse, parse_qs
 
@@ -43,6 +44,7 @@ def build_youtube_url(video_id: str):
 def extract_youtube_video_id(url: str):
     """extrai o id de um vídeo por uma url do youtube"""
 
+    # tenta extrair por regex, que é mais rápido, mas menos robusto
     if not url.startswith(('http://', 'https://')):
         url = 'https://' + url # adiciona esquema se faltar
 
@@ -51,6 +53,18 @@ def extract_youtube_video_id(url: str):
         return parse_qs(query.query).get('v', [None])[0]
     elif query.hostname == 'youtu.be':
         return query.path.lstrip('/')
+
+    # se não conseguir o id só pelo regex, tenta com o yt-dlp
+    logger.info('erro ao extrair id com regex. tentando novamente com a api do yt-dlp')
+
+    try:
+        with YoutubeDL(settings.YTDLP_OPTIONS) as ytdl:
+            info = ytdl.extract_info(url, download=False)
+            return info.get('id', None)
+    except:
+        logger.error(f'erro ao extrair o id do vídeo pela url: {url}')
+    
+    # se nenhum dos dois jeitos funcionarem
     return None
 
 def truncate_text(text: str, max_characters: int):

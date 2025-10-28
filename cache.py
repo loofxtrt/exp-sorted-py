@@ -28,7 +28,10 @@ def get_video_info(video_id: str, cache_file: Path = settings.CACHE_FILE):
         updated_cache = helpers.json_read_cache(cache_file)
         video_data = updated_cache.get(video_id)
         
-        return video_data
+        if video_data:
+            return video_data
+        else:
+            logger.error(f'erro ao tentar obter as informações do vídeo com o id: {video_id}')
 
 def write_video_cache(
     url: str, cache_file: Path = settings.CACHE_FILE,
@@ -47,9 +50,16 @@ def write_video_cache(
 
     # requisitar os dados do vídeo a api, e depois de obter, guardar em variáveis
     # o download do vídeo em si é ignorado
-    with YoutubeDL(ytdlp_options) as ytdl:
-        info = ytdl.extract_info(url, download=False)
-    
+    info = None
+
+    try:
+        with YoutubeDL(ytdlp_options) as ytdl:
+            info = ytdl.extract_info(url, download=False)
+    except Exception as err:
+        logger.error(f'erro ao tentar escrever o cache do vídeo {url}: {err}')
+
+    if not info: return
+
     video_id = info.get('id') # dígitos que aparecem depois de watch?v= em urls de vídeos
     title = info.get('title')
     upload_date = info.get('upload_date') # yyyymmdd
