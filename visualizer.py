@@ -73,7 +73,7 @@ def make_video_row(
     title = data.get('title')
     upload_date = data.get('upload_date')
     uploader = data.get('uploader')
-    view_count = str(data.get('view_count'))
+    view_count = data.get('view_count')
     duration = data.get('duration', 0) # valor em segundos. o 0 é um fallback caso esse campo não esteja presente
 
     # formatar o título

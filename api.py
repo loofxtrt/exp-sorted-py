@@ -1,3 +1,5 @@
+# python3 api.py + node javascript/test.js
+
 import cache
 from flask import Flask, jsonify
 
