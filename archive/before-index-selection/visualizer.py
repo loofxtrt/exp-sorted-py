@@ -7,10 +7,11 @@ from rich.panel import Panel
 from rich import box # pra controlar a espessura das bordas das tabelas
 from pathlib import Path
 from loguru import logger
+#from yt_dlp import YoutubeDL
 from datetime import datetime, timedelta
 
 # largura de todos os painéis do rich (sejam eles tabelas, paineis comuns etc.)
-STANDARD_PANEL_WIDTH: int = 130
+STANDARD_PANEL_WIDTH: int = 120
 
 def make_table(title: str = None, width: int = STANDARD_PANEL_WIDTH):
     """
@@ -36,7 +37,6 @@ def make_table(title: str = None, width: int = STANDARD_PANEL_WIDTH):
 
 def build_video_row(
         target_table: Table,
-        entry_index: int,
         video_id: str,
         include_description: bool = False,
         truncate_title: bool = True,
@@ -45,9 +45,6 @@ def build_video_row(
         desc_max: int = 100
     ):
     """
-    @param entry_index
-        posição dessa entrada na tabela da playlist
-
     @param target_table:
         a tabela em que o novo row vai ser inserido
 
@@ -102,7 +99,6 @@ def build_video_row(
 
     # adicionar as informações finais a tabela em um novo row
     target_table.add_row(
-        str(entry_index),
         title,
         uploader,
         duration,
@@ -169,23 +165,17 @@ def view_playlist(playlist_file: Path, show_description: bool = False):
     # tabela de todos os vídeos da playlists
     table = make_table()
 
-    table.add_column('')
     table.add_column('Title')
     table.add_column('Uploader')
     table.add_column('Duration')
     table.add_column('Views')
     table.add_column('Upload date')
 
-    for i, video in enumerate(data.get('entries')):
+    for video in data.get('entries'):
         # pra cada video presente no arquivo, criar um row na tabela com essas informações
         #video_id = helpers.extract_youtube_video_id(video.get('url'))
         video_id = video.get('id')
-        build_video_row(
-            target_table=table,
-            entry_index=i,
-            video_id=video_id,
-            include_description=show_description
-        )
+        build_video_row(table, video_id, include_description=show_description)
 
     # painel com informações extras da playlist sendo visualizada
     # contém lógica pra usar plural ou singular de 'vídeos' caso tenha menos ou mais de um
@@ -203,18 +193,3 @@ def view_playlist(playlist_file: Path, show_description: bool = False):
     console = Console()
     console.print(panel)
     console.print(table)
-
-    # selecionar um row
-    # baseado no número passado pro input, encontra o dicionário (o vídeo)
-    # naquela posição do array de entradas da playlist 
-    selection = input(f'selecione um row pelo índice (0-{video_count - 1}) ')
-    try:
-        selection = int(selection)
-    
-        selected_id = data['entries'][selection]['id']
-        selection_data = cache.get_video_info(selected_id)
-
-        if selection_data:
-            print(selection_data.get('title'))
-    except:
-        pass
