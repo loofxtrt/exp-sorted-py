@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Playlist</title>
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"/>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&icon_names=add"/>
 </head>
 <body>
     <main>
@@ -18,48 +18,22 @@
                 <p id="playlist-description" class="light">Lorem ipsum, dolor sit amet consectetur adipisicing elit. Neque est perferendis provid...</p>
             </div>
 
-            <div class="numerical-info light small-icons">
+            <div class="numerical-info light">
                 <!--<p id="playlist-duration">0:00 • 26 videos</p>-->
-                
-                <p id="playlist-created-at">
-                    <span class="material-symbols-rounded">calendar_today</span>
-                    Created: 2025-10-20
-                </p>
-                
-                <p id="playlist-last-modified-at">
-                    <span class="material-symbols-rounded">update</span>
-                    Modified: 2025-10-26
-                </p>
-
-                <p id="playlist-file-size">
-                    <span class="material-symbols-rounded">draft</span>
-                    File size: 36.6 KiB
-                </p>
+                <p id="playlist-created-at">Created: 2025-10-20</p>
+                <p id="playlist-last-modified-at">Modified: 2025-10-26</p>
             </div>
 
             <div id="actions">
                 <div class="add-videos-container">
                     <input type="text" id="add-videos-input" placeholder="https://www.youtube.com/watch?v=...">
-                    
-                    <button id="add-videos-button">
-                        <span class="add-videos-icon material-symbols-rounded">add</span>
+                    <button id="add-videos-button" class="special">
+                        <span class="material-symbols-outlined">add</span>
+                        Insert
                     </button>
                 </div>
 
-                <button id="edit-playlist">
-                    <span class="material-symbols-rounded">edit</span>
-                    Edit playlist
-                </button>
-
-                <button id="selection-mode">
-                    <span class="material-symbols-rounded">splitscreen</span>
-                    Selection mode
-                </button>
-
-                <button id="delete-playlist">
-                    <span class="material-symbols-rounded">delete</span>
-                    Delete playlist
-                </button>
+                <button id="edit-playlist">Edit playlist</button>
             </div>
         </div>
 
