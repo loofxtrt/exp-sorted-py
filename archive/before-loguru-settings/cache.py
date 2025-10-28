@@ -66,6 +66,7 @@ def write_video_cache(
     uploader = info.get('uploader')
     view_count = info.get('view_count')
     duration = info.get('duration', 0) # segundos. 0 é fallback se o campo não estiver presente
+    description = info.get('description')
     thumbnail = info.get('thumbnail')
     description = info.get('description')
     

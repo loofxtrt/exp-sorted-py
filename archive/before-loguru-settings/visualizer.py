@@ -85,7 +85,7 @@ def build_video_row(
     if include_description:
         # se optar por mostrar a descrição, juntar o título e ela (truncada, por padrão) em uma única célula
         # [dim] faz a desc ficar com a cor mais fraca
-        description = data.get('description')
+        description = info.get('description')
         if truncate_desc:
             description = helpers.truncate_text(description, desc_max)
 

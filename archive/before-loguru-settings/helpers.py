@@ -29,7 +29,7 @@ def confirm(prompt: str, default: bool = False, assume_default: bool = False):
 def clear_risky_characters(string: str):
     # remover caracteres de risco em múltiplos sistemas operacionais
     forbidden = r'[\/\\\?\%\*\:\|\"<>\.]'
-    string = re.sub(forbidden, '-', string)
+    clear = re.sub(forbidden, '-', string)
 
     # remover possíveis espaços adicionais
     string = string.strip()
@@ -84,7 +84,7 @@ def extract_youtube_video_id(url: str):
         return query.path.lstrip('/')
 
     # se não conseguir o id só pelo regex, tenta com o yt-dlp
-    logger.warning('erro ao extrair id com regex. tentando novamente com a api do yt-dlp')
+    logger.info('erro ao extrair id com regex. tentando novamente com a api do yt-dlp')
 
     try:
         with YoutubeDL(settings.YTDLP_OPTIONS) as ytdl:
