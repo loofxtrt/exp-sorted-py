@@ -35,7 +35,7 @@ def make_table(title: str = None, width: int = STANDARD_PANEL_WIDTH):
     
     return table
 
-def make_video_row(
+def build_video_row(
         target_table: Table,
         video_id: str,
         include_description: bool = False,
@@ -128,6 +128,9 @@ def view_directory(directory: Path):
         
         # obter os dados da playlist e extrai-los
         data = helpers.json_read_playlist(f)
+        if not data:
+            continue
+        
         title = f.stem
         video_count = str(len(data['entries']))
         creation_date = data['created-at']
@@ -162,7 +165,7 @@ def view_playlist(playlist_file: Path, show_description: bool = False):
         # pra cada video presente no arquivo, criar um row na tabela com essas informações
         #video_id = helpers.extract_youtube_video_id(video.get('url'))
         video_id = video.get('id')
-        make_video_row(table, video_id, include_description=show_description)
+        build_video_row(table, video_id, include_description=show_description)
 
     # painel com informações extras da playlist sendo visualizada
     # contém lógica pra usar plural ou singular de 'vídeos' caso tenha menos ou mais de um

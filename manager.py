@@ -1,4 +1,5 @@
 import settings
+import helpers
 from helpers import json_read_playlist, json_write_playlist, get_iso_datetime, generate_random_id, extract_youtube_video_id, handle_existing_file, build_youtube_url
 
 from yt_dlp import YoutubeDL
@@ -127,13 +128,40 @@ def remove_video(playlist_file: Path, video_id: str):
         # o else só roda se o break não tiver rodado nenhuma vez
         logger.info(f'{video_id} não está presente na playlist {playlist_file.stem}')
 
-def import_playlist(new_title: str, output_dir: Path, youtube_playlist_url: str, ytdlp_options: dict = settings.YTDLP_OPTIONS):
-    with YoutubeDL(ytdlp_options) as ytdl:
-        info = ytdl.extract_info(youtube_playlist_url, download=False)
+def import_playlist(output_dir: Path, yt_playlist_url: str, new_title: str = None, ytdlp_options: dict = settings.YTDLP_OPTIONS):
+    # tentar obter os dados da playlist
+    info = None
+    try:
+        with YoutubeDL(ytdlp_options) as ytdl:
+            info = ytdl.extract_info(yt_playlist_url, download=False)
+    except Exception as err:
+        logger.error(f'erro ao importar a playlist do youtube {yt_playlist_url}: {err}')
+
+    if not info:
+        return
+
+    # construir o caminho do novo arquivo e criar a playlist
+    try:
+        # usar o título extraído da playlist se um novo título não tiver sido especificado
+        if not new_title:
+            new_title = info['title']
     
-    # obter todas as urls de vídeos do campo 'entries' da playlist
+        # e garantir que o título não contenha caracteres conflitantes
+        new_title = helpers.clear_risky_characters(new_title)
+
+        final_path = output_dir / (new_title + '.json')
+        write_playlist(new_title, output_dir)
+    except OSError:
+        # usar um id aleatório como fallback
+        new_title = helpers.generate_random_id()
+        
+        final_path = output_dir / (new_title + '.json')
+        write_playlist(new_title, output_dir)
+
+    # passar todas as urls da playlist do youtube pra playlist local
+    # identificando todas as urls de vídeos do campo 'entries' da playlist e obtendo os ids
     urls = [entry['webpage_url'] for entry in info['entries'] if entry]
-    
-    final_path = output_dir / (new_title + '.json')
-    write_playlist(new_title, output_dir)
-    insert_video(final_path, urls)
+
+    for u in urls:
+        video_id = helpers.extract_youtube_video_id(u)
+        insert_video(playlist_file=final_path, video_id=video_id)

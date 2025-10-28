@@ -2,14 +2,28 @@ import json
 import string
 import random
 import settings
+import re
 from pathlib import Path
 from loguru import logger
 from datetime import datetime
 from datetime import timedelta
 from numerize.numerize import numerize
 from yt_dlp import YoutubeDL
-
 from urllib.parse import urlparse, parse_qs
+
+def clear_risky_characters(string: str):
+    # remover caracteres de risco em múltiplos sistemas operacionais
+    forbidden = r'[\/\\\?\%\*\:\|\"<>\.]'
+    clear = re.sub(forbidden, '-', string)
+
+    # remover possíveis espaços adicionais
+    string = string.strip()
+
+    # garantir que o nome exista
+    if not string:
+        string = generate_random_id()
+
+    return string
 
 def format_upload_date(upload_date: str):
     # a data do yt-dlp originalmente vem como a string '20251026'
@@ -124,7 +138,7 @@ def json_read_playlist(playlist_file: Path):
 
         # se não achar nenhum dado, o arquivo tá vazio
         if data is None:
-            logger.error(f'o arquivo {playlist_file} está vazio ou corrompido')
+            logger.info(f'o arquivo {playlist_file} está vazio ou não segue a estrutura de uma playlist')
 
     return data
 

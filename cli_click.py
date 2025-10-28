@@ -47,11 +47,12 @@ def remove(urls, playlist):
 
 @click.command(name='import')
 @click.argument('url')
-def import_pl(url):
+@click.option('--new-title', '-nt')
+def import_pl(url, new_title):
     manager.import_playlist(
-        new_title='imported',
+        new_title=new_title,
         output_dir=testing_folder,
-        url=url
+        yt_playlist_url=url
     )
 
 @click.command()

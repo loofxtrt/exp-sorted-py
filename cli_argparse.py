@@ -1,3 +1,5 @@
+# DEPRECATED
+
 import manager
 import visualizer
 
