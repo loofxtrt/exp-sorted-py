@@ -142,7 +142,7 @@ def view_directory(directory: Path):
         if not data or 'entries' not in data:
             continue
         
-        title = f.stem
+        title = helpers.get_playlist_title(playlist_file=f)
         video_count = str(len(data['entries']))
         creation_date = data['created-at']
         playlist_id = data['id']
@@ -176,9 +176,9 @@ def view_playlist(playlist_file: Path, show_description: bool = False):
     table.add_column('Views')
     table.add_column('Upload date')
 
+    # pra cada video presente no arquivo, criar um row na tabela com essas informações
+    # isso também inclui o índice da posição do vídeo (enumerate)
     for i, video in enumerate(data.get('entries')):
-        # pra cada video presente no arquivo, criar um row na tabela com essas informações
-        #video_id = helpers.extract_youtube_video_id(video.get('url'))
         video_id = video.get('id')
         build_video_row(
             target_table=table,
@@ -191,9 +191,10 @@ def view_playlist(playlist_file: Path, show_description: bool = False):
     # contém lógica pra usar plural ou singular de 'vídeos' caso tenha menos ou mais de um
     video_count = len(data['entries'])
     contains = str(video_count) + ' ' + ('videos' if video_count > 1 else 'video')
-    
+    playlist_title = helpers.get_playlist_title(playlist_file)
+
     panel = Panel(
-        f'Title: {playlist_file.stem}\nContains: {contains}',
+        f'Title: {playlist_title}\nContains: {contains}',
         box=box.ROUNDED,
         border_style='dim',
         width=STANDARD_PANEL_WIDTH
@@ -207,14 +208,14 @@ def view_playlist(playlist_file: Path, show_description: bool = False):
     # selecionar um row
     # baseado no número passado pro input, encontra o dicionário (o vídeo)
     # naquela posição do array de entradas da playlist 
-    selection = input(f'selecione um row pelo índice (0-{video_count - 1}) ')
-    try:
-        selection = int(selection)
+    # selection = input(f'selecione um row pelo índice (0-{video_count - 1}) ')
+    # try:
+    #     selection = int(selection)
     
-        selected_id = data['entries'][selection]['id']
-        selection_data = cache.get_video_info(selected_id)
+    #     selected_id = data['entries'][selection]['id']
+    #     selection_data = cache.get_video_info(selected_id)
 
-        if selection_data:
-            print(selection_data.get('title'))
-    except:
-        pass
+    #     if selection_data:
+    #         print(selection_data.get('title'))
+    # except:
+    #     pass

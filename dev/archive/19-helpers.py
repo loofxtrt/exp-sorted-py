@@ -1,3 +1,5 @@
+# ESSA VERSÃO MANTÉM A OPÇÃO DE RETORNAR DADOS DE UMA PLAYLIST VIA ID
+
 import json
 import string
 import random
@@ -121,10 +123,17 @@ def get_playlist_file_by_id(playlist_id: str, directory: Path):
         if data.get('id') == playlist_id:
             return f
 
-def get_playlist_title(playlist_file: Path):
-    # o título de uma playlist é o nome do arquivo sem a extensão
-    if playlist_file.exists() and playlist_file.is_file():
-        return playlist_file.stem
+# def get_playlist_data_by_id(playlist_id: str, directory: Path):
+#     # ler todos os arquivos que são possivelmente playlists em um diretório
+#     # se achar uma playlist que contenha o mesmo id passado pra func
+#     # retorna os dados dessa playlist
+#     for f in directory.iterdir():
+#         if not f.is_file() or not f.suffix == '.json':
+#             continue
+    
+#         data = json_read_playlist(f)
+#         if data.get('id') == playlist_id:
+#             return data
 
 def generate_random_id(id_length: int = 8):
     # obter uma string com todas as letras do alfabeto (upper e lower)

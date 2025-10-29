@@ -17,6 +17,7 @@
 
     --text-normal: white;
     --text-light: #bbbbbb;
+    /*--text-faint: #9a9aab;*/
     --text-faint: #999999;
 
     --trans-00: #0000004b;
@@ -112,7 +113,7 @@ main {
 }
 
 #side-bar {
-    background-image: linear-gradient(to top, #00000000, #474747);
+    background-image: linear-gradient(to top, #00000000, #6d3f34); /* cor de vídeo simulada */
     max-width: 320px;
     height: 2000px;
     border-radius: 5px;

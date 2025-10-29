@@ -1,13 +1,13 @@
+# ESSA VERSÃO SEPARAVA O TÍTULO DOS OUTROS DADOS
+
 # python3 api.py + node test.js
 
 import cache
 import helpers
 from flask import Flask, jsonify
-from flask_cors import CORS
 from pathlib import Path
 
 app = Flask(__name__)
-CORS(app)
 
 def get_playlist_file(playlist_id: str):
     return helpers.get_playlist_file_by_id(
@@ -36,15 +36,17 @@ def get_playlist_data(playlist_id: str):
     file = get_playlist_file(playlist_id)
     data = helpers.json_read_playlist(file)
 
-    response = {
-        'title': helpers.get_playlist_title(file), # também incluir o título da playlist na resposta
-        'entries': data.get('entries'),
-        'created-at': data.get('created-at'),
-        'last-modified-at': data.get('last-modified-at'),
-        'id': data.get('id')
-    }
+    # também incluir o título da playlist na resposta
+    data['title'] = helpers.get_playlist_title(file)
 
-    return response
+    return data
+
+@app.route('/playlist/title/<playlist_id>', methods=['GET'])
+def get_playlist_title(playlist_id: str):
+    file = get_playlist_file(playlist_id)
+    data = {'title': helpers.get_playlist_title(file)} # transforma em json mesmo sendo só uma string, pra ser parseavel
+    
+    return data
 
 if __name__ == '__main__':
     app.run(debug=True)
