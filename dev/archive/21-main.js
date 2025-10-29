@@ -1,3 +1,5 @@
+// ESSA VERSÃO NÃO CARREGAVA OS DADOS DOS VÍDEOS DINAMICAMENTE
+
 const API_ADDRESS = 'http://127.0.0.1:5000';
 const playlistId = 'xKFHDg6h';
 
@@ -30,14 +32,8 @@ async function updateHtml(playlistTitle, videoIds) {
     // e adicionar o elemento criado a lista de vídeos visual da playlist
     const videoList = document.querySelector('#video-list');
     
-    for (id of videoIds) { // não dá pra usar foreach por causa do await
+    videoIds.forEach(id => {
         const response = await fetch(`${API_ADDRESS}/video/${id}`);
-        const data = await response.json();
-        
-        const title = data.title;
-        const viewCount = data.view_count;
-        const uploadDate = data.upload_date;
-        const uploader = data.uploader;
 
         const videoItem = document.createElement('div')
         videoItem.classList.add('video-item');
@@ -45,22 +41,22 @@ async function updateHtml(playlistTitle, videoIds) {
         <img src="../placeholders/sddefault.jpg" alt="video thumbnail" class="video-thumbnail">
         
         <div class="video-info">
-            <p class="title">${title}</p>
+            <p class="title">Entregando ÁGUA e TOMANDO SUSTO 💧 Water Delivery</p>
             
             <div class="sub-info faint">
                 <div>
-                    <span class="view-count">${viewCount} views</span>
+                    <span class="view-count">50K views</span>
                     <span>•</span>
-                    <span class="upload-date">${uploadDate}</span>
+                    <span class="upload-date">Dec 30, 2024</span>
                 </div>
 
-                <p class="uploader">${uploader}</p>
+                <p class="uploader">Felps LIVE</p>
             </div>
         </div>
         `;
 
         videoList.appendChild(videoItem);
-    };
+    });
 }
 
 loadPlaylist(playlistId);

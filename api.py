@@ -10,6 +10,7 @@ app = Flask(__name__)
 CORS(app)
 
 def get_playlist_file(playlist_id: str):
+    # não faz parte da api, é só um wrapper
     return helpers.get_playlist_file_by_id(
         playlist_id=playlist_id,
         directory=Path('./tests')
@@ -44,7 +45,7 @@ def get_playlist_data(playlist_id: str):
         'id': data.get('id')
     }
 
-    return response
+    return jsonify(response)
 
 if __name__ == '__main__':
     app.run(debug=True)
