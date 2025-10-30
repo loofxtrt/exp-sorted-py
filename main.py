@@ -73,6 +73,17 @@ def view_pl(playlist, show_desc):
         show_description=show_desc
     )
 
+@click.command()
+@click.argument('origin-playlist')
+@click.argument('destination-playlist')
+@click.argument('url')
+def move(origin_playlist, destination_playlist, url):
+    manager.move_video(
+        origin_playlist=Path(origin_playlist),
+        destination_playlist=Path(destination_playlist),
+        video_id=helpers.extract_youtube_video_id(url)
+    )
+
 @click.group()
 def cli():
     pass
@@ -84,6 +95,7 @@ cli.add_command(remove)
 cli.add_command(delete)
 cli.add_command(view_dir)
 cli.add_command(view_pl)
+cli.add_command(move)
 
 if __name__ == '__main__':
     cli()

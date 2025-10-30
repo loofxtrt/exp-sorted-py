@@ -1,3 +1,5 @@
+# ESSA VERSÃO NÃO USAVA REMOVE VIDEO NO MOVE VIDEO, ELA REPETIA A LÓGICA
+
 import settings
 import helpers
 from helpers import json_read_playlist, json_write_playlist, get_iso_datetime, generate_random_id, extract_youtube_video_id, build_youtube_url
@@ -109,50 +111,46 @@ def remove_video(playlist_file: Path, video_id: str):
     if not video_id: return
 
     data = json_read_playlist(playlist_file)
-    entries = data.get('entries')
 
-    for entry in entries:
+    for entry in data['entries']:
         # se o id alvo de remoção estiver presente em um desses campos,
-        # remove a entrada do dicionário a qual ele pertence e atualiza os dados
-        if entry.get('id') == video_id:
-            entries.remove(entry)
+        # remove o índice do dicionário a qual ele pertence e atualiza os dados
+        if entry['id'] == video_id:
+            removed = data.get('entries').remove(video_id)
             json_write_playlist(playlist_file, data)
 
             logger.success(f'{video_id} removido da playlist {playlist_file.stem}')
-        
-            return
+            break
     else:
         # se o for inteiro rodar sem nenhum break, o vídeo não foi encontrado
         logger.info(f'{video_id} não está presente na playlist {playlist_file.stem}')
 
 def move_video(origin_playlist: Path, destination_playlist: Path, video_id: str):
+    origin_data = helpers.json_read_playlist(origin_playlist)
+
     dest_title = helpers.get_playlist_title(destination_playlist)
     origin_title = helpers.get_playlist_title(origin_playlist)
 
-    # entra na playlist de origem
+    # se o vídeo que está tentando ser movido não existe na playlist de origem
+    if is_entry_present(destination_playlist, video_id):
+        logger.info(f'o mesmo vídeo ({video_id}) já existe na playlist de destino {dest_title}')
+        return
+
+    # se existir, entra na playlist de origem
     # e pra cada entrada, checa se o id é igual ao do vídeo alvo de movimento
-    origin_data = helpers.json_read_playlist(origin_playlist)
-
     for entry in origin_data.get('entries'):
-        # se encontrar o vídeo na playlist de origem, remove ele de lá
-        # e adiciona esse mesmo vídeo na playlist de destino
+        # se encontrar o vídeo na playlist de origem
         if entry.get('id') == video_id:
-            # se o vídeo que está tentando ser movido já existe na playlist de destino, não continua
-            if is_entry_present(destination_playlist, video_id):
-                logger.info(f'o mesmo vídeo ({video_id}) já existe na playlist de destino {dest_title}')
-                return
-
-            # se ainda não existir no destino, continua o movimento
-            remove_video(origin_playlist, video_id)
+            removed = origin_data.get('entries').remove(entry)
             insert_video(destination_playlist, video_id)
 
-            logger.success(f'vídeo movido de {origin_title} para {dest_title}')
-        
-            return
+            logger.success(f'vídeo movido de {origin_title}')
+        break
     else:
-        # se não encontrar o vídeo na playlist de origem
         logger.info(f'o vídeo ({video_id}) não existe na playlist de origem {origin_title}')
         return
+
+    helpers.json_write_playlist(origin_playlist, origin_data)
 
 def import_playlist(output_dir: Path, yt_playlist_url: str, new_title: str = None, ytdlp_options: dict = settings.YTDLP_OPTIONS):
     # tentar obter os dados da playlist
