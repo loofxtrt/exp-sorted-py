@@ -1,3 +1,5 @@
+# ESSA VERSÃO NÃO TINHA SUPORTE A DESCRIÇÃO
+
 import settings
 import helpers
 from helpers import json_read_playlist, json_write_playlist, get_iso_datetime, generate_random_id, extract_youtube_video_id, build_youtube_url
@@ -16,7 +18,7 @@ def is_entry_present(playlist_file: Path, video_id: str):
     
     return False
 
-def write_playlist(playlist_title: str, output_dir: Path, playlist_description: str, assume_default: bool = False):
+def write_playlist(playlist_title: str, output_dir: Path, assume_default: bool = False):
     # obter a data iso já formatada e um id aleatório novo pra playlist
     current_date = get_iso_datetime()
     playlist_id = generate_random_id()
@@ -26,15 +28,11 @@ def write_playlist(playlist_title: str, output_dir: Path, playlist_description: 
 
     # estruturar os dados
     data = {
+        #'title': playlist_title,
         'created-at': current_date,
         'id': playlist_id,
         'entries': []
     }
-    if playlist_description:
-        # adicionar a descrição caso ela tenha sido passada
-        # se não foi, o campo não vai estar presente no arquivo
-        data['description'] = playlist_description
-    
     logger.debug(f'dados a serem escritos em {str(final_path)}: {str(data)}')
     
     # se a playlist já existir

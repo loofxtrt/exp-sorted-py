@@ -8,10 +8,12 @@ testing_folder = Path('./tests')
 
 @click.command()
 @click.argument('title')
+@click.option('--description', '-d')
 @click.option('--assume-default', '-y', is_flag=True)
-def create(title, assume_default):
+def create(title, description, assume_default):
     manager.write_playlist(
         playlist_title=title,
+        playlist_description=description,
         output_dir=testing_folder,
         assume_default=assume_default
     )

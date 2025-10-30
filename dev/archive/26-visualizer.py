@@ -8,7 +8,6 @@ from rich import box # pra controlar a espessura das bordas das tabelas
 from pathlib import Path
 from loguru import logger
 from datetime import datetime, timedelta
-from textwrap import dedent
 
 # largura de todos os painéis do rich (sejam eles tabelas, paineis comuns etc.)
 STANDARD_PANEL_WIDTH: int = 130
@@ -37,6 +36,7 @@ def make_table(title: str = None, width: int = STANDARD_PANEL_WIDTH):
 
 def build_video_row(
         target_table: Table,
+        entry_index: int,
         video_id: str,
         include_description: bool = False,
         truncate_title: bool = True,
@@ -45,6 +45,9 @@ def build_video_row(
         desc_max: int = 100
     ):
     """
+    @param entry_index
+        posição dessa entrada na tabela da playlist
+
     @param target_table:
         a tabela em que o novo row vai ser inserido
 
@@ -99,6 +102,7 @@ def build_video_row(
 
     # adicionar as informações finais a tabela em um novo row
     target_table.add_row(
+        str(entry_index),
         title,
         uploader,
         duration,
@@ -165,6 +169,7 @@ def view_playlist(playlist_file: Path, show_description: bool = False):
     # tabela de todos os vídeos da playlists
     table = make_table()
 
+    table.add_column('')
     table.add_column('Title')
     table.add_column('Uploader')
     table.add_column('Duration')
@@ -173,10 +178,11 @@ def view_playlist(playlist_file: Path, show_description: bool = False):
 
     # pra cada video presente no arquivo, criar um row na tabela com essas informações
     # isso também inclui o índice da posição do vídeo (enumerate)
-    for video in data.get('entries'):
+    for i, video in enumerate(data.get('entries')):
         video_id = video.get('id')
         build_video_row(
             target_table=table,
+            entry_index=i,
             video_id=video_id,
             include_description=show_description
         )
@@ -187,15 +193,8 @@ def view_playlist(playlist_file: Path, show_description: bool = False):
     contains = str(video_count) + ' ' + ('video' if video_count == 1 else 'videos')
     playlist_title = helpers.get_playlist_title(playlist_file)
 
-    # texto do painel com identação e espaços extras removidos
-    panel_text = dedent(f"""
-        Title: {playlist_title}
-        Description: {data.get('description', '')}
-        Contains: {contains}
-    """).strip()
-
     panel = Panel(
-        panel_text,
+        f'Title: {playlist_title}\nDescription: {data['description']}\nContains: {contains}',
         box=box.ROUNDED,
         border_style='dim',
         width=STANDARD_PANEL_WIDTH
