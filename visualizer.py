@@ -15,9 +15,16 @@ STANDARD_PANEL_WIDTH: int = 130
 
 def make_table(title: str = None, width: int = STANDARD_PANEL_WIDTH):
     """
-    cria uma tabela com o rich
-    poderia ser feito só chamando o Table manualmente,
-    mas unificando em uma função, o estilo das tabelas fica mais consistente
+    cria uma tabela com o rich  
+      
+    poderia ser feito só chamando o Table manualmente,  
+    mas unificando em uma função o estilo das tabelas fica mais consistente  
+      
+    @param title:  
+        título da tabela (opcional)  
+      
+    @param width:  
+        largura da tabela
     """
 
     table = Table(
@@ -68,7 +75,7 @@ def build_video_row(
         quantos caracteres a descrição pode ter antes de ser truncada
     """
 
-    data = cache.get_video_info(video_id)
+    data = cache.get_cached_video_info(video_id)
     if not data: return
 
     title = data.get('title')
@@ -128,14 +135,9 @@ def view_directory(directory: Path):
 
     # começar a verificar cada arquivo no diretório pra gerar os rows na tabela criada
     for f in directory.iterdir():
-        if not f.is_file() or not f.suffix == '.json':
-            continue
-        
+        # incluir apenas playlists válidas na listagem
         data = helpers.json_read_playlist(f)
-
-        # se for um json válido, não significa que é automaticamente uma playlist
-        # a presença do entries é o que define se um arquivo é uma playlist válida ou não 
-        if not data or 'entries' not in data:
+        if not helpers.is_playlist_valid(playlist_file=f, data=data):
             continue
         
         title = helpers.get_playlist_title(playlist_file=f)
@@ -214,7 +216,7 @@ def view_playlist(playlist_file: Path, show_description: bool = False):
     #     selection = int(selection)
     
     #     selected_id = data['entries'][selection]['id']
-    #     selection_data = cache.get_video_info(selected_id)
+    #     selection_data = cache.get_cached_video_info(selected_id)
 
     #     if selection_data:
     #         print(selection_data.get('title'))

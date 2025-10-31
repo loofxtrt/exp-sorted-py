@@ -18,7 +18,7 @@ def get_playlist_file(playlist_id: str):
 
 @app.route('/video/<video_id>', methods=['GET'])
 def get_video(video_id: str):
-    data = cache.get_video_info(video_id)
+    data = cache.get_cached_video_info(video_id)
 
     response = {
         'title': data.get('title'),

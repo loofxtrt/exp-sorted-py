@@ -94,7 +94,7 @@ def main(playlist_file: Path):
     data = helpers.json_read_playlist(playlist_file)
     for video in data.get('entries'):
         video_id = video.get('id')
-        video_data = cache.get_video_info(video_id)
+        video_data = cache.get_cached_video_info(video_id)
 
         title = video_data.get('title')
         #description = helpers.truncate_text(video_data.get('description'), 80)

@@ -126,6 +126,49 @@ def get_playlist_title(playlist_file: Path):
     if playlist_file.exists() and playlist_file.is_file():
         return playlist_file.stem
 
+def is_playlist_valid(playlist_file: Path, data: dict | None = None):
+    """
+    verifica a válida de uma playlist ou seus dados  
+    a verificação de dados é necessária porque o arquivo pode ser um json válido,  
+    mas não ter a estrutura esperada de uma playlist
+      
+    @param playlist_file:  
+        obrigatório. nem toda chamada da função requer reler o arquivo inteiro  
+        mas toda chamada requer verificar a extensão/sufixo do arquivo  
+      
+    @param data:  
+        opicional. se for passado, a playlist não precisa ser lida duas vezes desnecessariamente  
+        quando uma função precisa saber se uma playlist é válida, mas ao mesmo tempo também já leu ela  
+        pode só passar os dados já extraídos pra validação
+    """
+    
+    # verificação das informações externas do arquivo
+    if not playlist_file.is_file() or not playlist_file.suffix == '.json':
+        return False
+
+    # verificação do conteúdo do arquivo
+    # se não tiver sido passado pra função, lê em tempo de execução
+    # se não encontrar nada, já é inválido
+    if not data is None:
+        data = json_read_playlist(playlist_file)
+        
+        if not data:
+            return False
+
+    # se um desses campos não estiverem nos dados extraídos, é inválido
+    required_fields = ['entries', 'id']
+    
+    for field in required_fields:
+        if field not in data:
+            return False
+
+    # se as entries não forem uma lista, é inválido
+    if not isinstance(data['entries'], list):
+        return False
+
+    # se nenhuma das ocorrências a cima acontecer, é válido
+    return True
+
 def generate_random_id(id_length: int = 8):
     # obter uma string com todas as letras do alfabeto (upper e lower)
     # e todos os digitos numéricos (0-9)
@@ -142,6 +185,9 @@ def generate_random_id(id_length: int = 8):
 
 def json_read_playlist(playlist_file: Path):
     """lê e retorna os dados dentro de um arquivo que representa uma playlist"""
+
+    if not playlist_file.is_file():
+        return
 
     with playlist_file.open('r', encoding='utf-8') as f:
         data = json.load(f)
@@ -173,3 +219,7 @@ def json_read_cache(cache_file: Path = settings.CACHE_FILE):
             current_cache = json.load(f)
 
     return current_cache
+
+def json_write_cache(data_to_write: dict, cache_file: Path = settings.CACHE_FILE):
+    with cache_file.open('w', encoding='utf-8') as f:
+        json.dump(data_to_write, f, indent=4, ensure_ascii=False)

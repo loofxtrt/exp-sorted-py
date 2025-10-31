@@ -1,1 +1,0 @@
-pip install pywebview qtpy PyQt6-webEngine

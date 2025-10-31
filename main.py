@@ -2,6 +2,7 @@ import click
 import manager
 import visualizer
 import helpers
+import cache
 from pathlib import Path
 
 testing_folder = Path('./tests')
@@ -86,6 +87,13 @@ def move(origin_playlist, destination_playlist, url):
         video_id=helpers.extract_youtube_video_id(url)
     )
 
+@click.command()
+@click.argument('playlists-directory')
+def update_cache(playlists_directory):
+    cache.update_full_cache(
+        playlists_directory=Path(playlists_directory)
+    )
+
 @click.group()
 def cli():
     pass
@@ -98,6 +106,7 @@ cli.add_command(delete)
 cli.add_command(view_dir)
 cli.add_command(view_pl)
 cli.add_command(move)
+cli.add_command(update_cache)
 
 if __name__ == '__main__':
     cli()
