@@ -5,6 +5,16 @@ from pathlib import Path
 from yt_dlp import YoutubeDL
 from loguru import logger
 
+def is_video_cached(video_id: str, cache_file: Path = settings.CACHE_FILE) -> bool:
+    """
+    consulta o cache pra verificar A PRESENÇA de um vídeo  
+    essa função NÃO obtém as informações daquele vídeo, só confirma se ele de fato existe ou não
+    """
+    
+    # retornar true se o id existir no cache e false caso não exista
+    cache = helpers.json_read_cache(cache_file)
+    return video_id in cache
+
 def get_cached_video_info(video_id: str, cache_file: Path = settings.CACHE_FILE):
     """
     consulta o cache pra tentar obter os dados de um vídeo sem precisar chamar a api do yt-dlp  

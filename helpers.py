@@ -12,10 +12,26 @@ from yt_dlp import YoutubeDL
 from urllib.parse import urlparse, parse_qs
 
 def confirm(prompt: str, default: bool = False, assume_default: bool = False):
+    """
+    exibe um prompt de sim ou não pro usuário  
+      
+    @param prompt:  
+        texto a ser exibido  
+      
+    @param default:  
+        valor padrão de resposta. é destacado com uppercase na exibição do prompt  
+        se o usuário não responder nada, esse é o valor que vai ser usado  
+      
+    @param assume_default:  
+        se for verdadeiro, faz o prompt ser completamente ignorado,  
+        retornando uma resposta positiva sem confirmação
+    """
+
     if assume_default:
         return True
     
     # construir e mostrar o input
+    # a opção padrão é mostrada em uppercase, enquanto a não-padrão é lowercase
     display = '(Y/n)' if default == True else '(y/N)'
     answer = input(f'{prompt} {display} ').strip().lower()
     
@@ -25,20 +41,6 @@ def confirm(prompt: str, default: bool = False, assume_default: bool = False):
 
     # se teve resposta, retornar se ela foi 'sim' ou o oposto
     return answer == 'y'
-
-def clear_risky_characters(string: str):
-    # remover caracteres de risco em múltiplos sistemas operacionais
-    forbidden = r'[\/\\\?\%\*\:\|\"<>\.]'
-    string = re.sub(forbidden, '-', string)
-
-    # remover possíveis espaços adicionais
-    string = string.strip()
-
-    # garantir que o nome exista
-    if not string:
-        string = generate_random_id()
-
-    return string
 
 def format_upload_date(upload_date: str):
     # a data do yt-dlp originalmente vem como a string '20251026'
@@ -53,25 +55,34 @@ def format_upload_date(upload_date: str):
     return datetime.strftime(upload_date, '%b %-d, %Y').capitalize()
 
 def format_view_count(view_count: int):
+    # transforma 1.243 em 1K
     return numerize(view_count, decimals=0)
 
 def format_duration(seconds: int):
     duration = str(timedelta(seconds=seconds)) # hh:mm:ss
     
     # remover a primeira parte (hh:) se o vídeo tiver menos de 1 hora
-    # portanto, essa parte não é necessária
+    # isso é identificado quando a primeira parte é só '0'
+    # a string é cortada e o que é retornado é apenas a parte relevante
     if duration[0] == '0':
         duration = duration[2:]
 
     return duration
 
 def build_youtube_url(video_id: str):
-    """reconstrói uma url do youtube a partir do id de um vídeo"""
+    """
+    reconstrói uma url do youtube a partir do id de um vídeo  
+    é majoritariamente usada quando um vídeo precisa ser passado pro yt-dlp
+    """
 
     return f'https://www.youtube.com/watch?v={video_id}'
 
 def extract_youtube_video_id(url: str):
-    """extrai o id de um vídeo por uma url do youtube"""
+    """
+    extrai o id de um vídeo por uma url do youtube  
+    o yt-dlp já tem um método pra obter o id, mas esse método é mais rápido  
+    ele é menos confiável que o yt-dlp, então se ele quebrar, ele usa a api como fallback
+    """
 
     # tenta extrair por regex, que é mais rápido, mas menos robusto
     if not url.startswith(('http://', 'https://')):
@@ -87,13 +98,14 @@ def extract_youtube_video_id(url: str):
     logger.warning('erro ao extrair id com regex. tentando novamente com a api do yt-dlp')
 
     try:
-        with YoutubeDL(settings.YTDLP_OPTIONS) as ytdl:
-            info = ytdl.extract_info(url, download=False)
-            return info.get('id', None)
+        ytdl = YoutubeDL(settings.YTDLP_OPTIONS)
+        info = ytdl.extract_info(url, download=False)
+
+        return info.get('id', None)
     except:
-        logger.error(f'erro ao extrair o id do vídeo pela url: {url}')
+        logger.error(f'erro ao extrair id com a api do yt-dlp')
     
-    # se nenhum dos dois jeitos funcionarem
+    logger.critical(f'nenhum método de extração de id funcionou com a url: {url}')
     return None
 
 def truncate_text(text: str, max_characters: int):
@@ -110,16 +122,21 @@ def get_iso_datetime():
     return datetime.now().isoformat(timespec='seconds')
 
 def get_playlist_file_by_id(playlist_id: str, directory: Path):
-    # ler todos os arquivos que são possivelmente playlists em um diretório
-    # se achar uma playlist que contenha o mesmo id passado pra func
-    # retorna o arquivo dessa playlist
+    """
+    a partir do diretório passado pra função, verifica todas as playlists válidas nele  
+    e tenta achar uma que contém o mesmo id passado
+    """
+
+    # ler todos os arquivos até achar uma playlist com o mesmo id passado
     for f in directory.iterdir():
-        if not f.is_file() or not f.suffix == '.json':
+        if not is_playlist_valid(f):
             continue
     
         data = json_read_playlist(f)
         if data.get('id') == playlist_id:
             return f
+    
+    return None
 
 def get_playlist_title(playlist_file: Path):
     # o título de uma playlist é o nome do arquivo sem a extensão
@@ -143,7 +160,7 @@ def is_playlist_valid(playlist_file: Path, data: dict | None = None):
     """
     
     # verificação das informações externas do arquivo
-    if not playlist_file.is_file() or not playlist_file.suffix == '.json':
+    if not playlist_file.exists() or not playlist_file.is_file() or not playlist_file.suffix == '.json':
         return False
 
     # verificação do conteúdo do arquivo
@@ -171,8 +188,9 @@ def is_playlist_valid(playlist_file: Path, data: dict | None = None):
 
 def generate_random_id(id_length: int = 8):
     # obter uma string com todas as letras do alfabeto (upper e lower)
-    # e todos os digitos numéricos (0-9)
-    characters = string.ascii_letters + string.digits
+    # todos os digitos numéricos (0-9)
+    # underscore (_) e hífen (-)
+    characters = string.ascii_letters + string.digits + '-' + '_'
 
     # criar um id, atribuindo um índice aleatório do grupo de caracteres
     # até que o comprimento total do id seja preenchido

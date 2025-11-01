@@ -12,7 +12,7 @@ testing_folder = Path('./tests')
 @click.option('--description', '-d')
 @click.option('--assume-default', '-y', is_flag=True)
 def create(title, description, assume_default):
-    manager.write_playlist(
+    manager.create_playlist(
         playlist_title=title,
         playlist_description=description,
         output_dir=testing_folder,
