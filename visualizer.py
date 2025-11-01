@@ -76,7 +76,8 @@ def build_video_row(
     """
 
     data = cache.get_cached_video_info(video_id)
-    if not data: return
+    if not data:
+        return
 
     title = data.get('title')
     upload_date = data.get('upload_date')

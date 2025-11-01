@@ -149,7 +149,7 @@ def is_playlist_valid(playlist_file: Path, data: dict | None = None):
     # verificação do conteúdo do arquivo
     # se não tiver sido passado pra função, lê em tempo de execução
     # se não encontrar nada, já é inválido
-    if not data is None:
+    if data is None:
         data = json_read_playlist(playlist_file)
         
         if not data:
