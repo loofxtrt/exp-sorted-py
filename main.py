@@ -21,9 +21,11 @@ def create(title, description, assume_default):
 
 @click.command()
 @click.argument('playlist')
-def delete(playlist):
+@click.option('--deep-validation', '-dv', is_flag=True)
+def delete(playlist, deep_validation):
     manager.delete_playlist(
-        playlist_file=Path(playlist)
+        playlist_file=Path(playlist),
+        superficial_validation=deep_validation
     )
 
 @click.command()
@@ -89,9 +91,11 @@ def move(origin_playlist, destination_playlist, url):
 
 @click.command()
 @click.argument('playlists-directory')
-def update_cache(playlists_directory):
+@click.option('--include-all', '-ia')
+def update_cache(playlists_directory, include_all):
     cache.update_full_cache(
-        playlists_directory=Path(playlists_directory)
+        playlists_directory=Path(playlists_directory),
+        skip_already_cached=not update_already_cached
     )
 
 @click.group()

@@ -129,10 +129,11 @@ def get_playlist_file_by_id(playlist_id: str, directory: Path):
 
     # ler todos os arquivos até achar uma playlist com o mesmo id passado
     for f in directory.iterdir():
-        if not is_playlist_valid(f):
+        data = json_read_playlist(f)
+
+        if not is_playlist_valid(playlist_file=f, playlist_data=data):
             continue
     
-        data = json_read_playlist(f)
         if data.get('id') == playlist_id:
             return f
     
@@ -143,7 +144,7 @@ def get_playlist_title(playlist_file: Path):
     if playlist_file.exists() and playlist_file.is_file():
         return playlist_file.stem
 
-def is_playlist_valid(playlist_file: Path, data: dict | None = None):
+def is_playlist_valid(playlist_file: Path, playlist_data: dict | None = None, superficial_validation: bool = False):
     """
     verifica a válida de uma playlist ou seus dados  
     a verificação de dados é necessária porque o arquivo pode ser um json válido,  
@@ -153,40 +154,49 @@ def is_playlist_valid(playlist_file: Path, data: dict | None = None):
         obrigatório. nem toda chamada da função requer reler o arquivo inteiro  
         mas toda chamada requer verificar a extensão/sufixo do arquivo  
       
-    @param data:  
+    @param playlist_data:  
         opicional. se for passado, a playlist não precisa ser lida duas vezes desnecessariamente  
         quando uma função precisa saber se uma playlist é válida, mas ao mesmo tempo também já leu ela  
-        pode só passar os dados já extraídos pra validação
+        pode só passar os dados já extraídos pra validação  
+      
+    @param superficial_validation:  
+        opcional. se for verdadeiro, faz a checagem apenas baseada nas informações externas,  
+        como a existência, sufixo ou tipo do arquivo. é menos preciso, mas mais rápido por não precisar de i/o
     """
     
-    # verificação das informações externas do arquivo
     if not playlist_file.exists() or not playlist_file.is_file() or not playlist_file.suffix == '.json':
         return False
 
-    # verificação do conteúdo do arquivo
-    # se não tiver sido passado pra função, lê em tempo de execução
+    # parar logo aqui se for uma verifiação superficial
+    if superficial_validation:
+        return
+
+    
+    # se o conteúdo já aberto não tiver sido passado pra função, lê em tempo de execução
     # se não encontrar nada, já é inválido
-    if data is None:
-        data = json_read_playlist(playlist_file)
+    if playlist_data is None:
+        playlist_data = json_read_playlist(playlist_file)
         
-        if not data:
+        if not playlist_data:
             return False
 
     # se um desses campos não estiverem nos dados extraídos, é inválido
     required_fields = ['entries', 'id']
     
     for field in required_fields:
-        if field not in data:
+        if field not in playlist_data:
             return False
 
     # se as entries não forem uma lista, é inválido
-    if not isinstance(data['entries'], list):
+    if not isinstance(playlist_data['entries'], list):
         return False
 
     # se nenhuma das ocorrências a cima acontecer, é válido
     return True
 
 def generate_random_id(id_length: int = 8):
+    """gera um id usando todas as letras, numeros e alguns caracteres especiais"""
+
     # obter uma string com todas as letras do alfabeto (upper e lower)
     # todos os digitos numéricos (0-9)
     # underscore (_) e hífen (-)
@@ -217,12 +227,15 @@ def json_read_playlist(playlist_file: Path):
     return data
 
 def json_write_playlist(playlist_file: Path, data_to_write: dict):
-    """escreve dados estruturados como um dicionário em um arquivo que representa uma playlist"""
+    """
+    escreve dados estruturados pra representar uma playlist  
+    não guarda url de vídeos, apenas o id deles
+    """
 
     data_to_write['last-modified-at'] = get_iso_datetime()
 
     with playlist_file.open('w', encoding='utf-8') as f:
-        json.dump(data_to_write, f, indent=4)
+        json.dump(data_to_write, f, indent=4, ensure_ascii=False)
 
 def json_read_cache(cache_file: Path = settings.CACHE_FILE):
     """lê o arquivo de cache atual e retorna o seu conteúdo"""
@@ -239,5 +252,10 @@ def json_read_cache(cache_file: Path = settings.CACHE_FILE):
     return current_cache
 
 def json_write_cache(data_to_write: dict, cache_file: Path = settings.CACHE_FILE):
+    """
+    escreve informações de vídeos no cache  
+    serve pra salvar dados já obtidos e evitar chamadas extras pra api do yt-dlp  
+    """
+
     with cache_file.open('w', encoding='utf-8') as f:
         json.dump(data_to_write, f, indent=4, ensure_ascii=False)

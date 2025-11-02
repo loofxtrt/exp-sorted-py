@@ -138,7 +138,7 @@ def view_directory(directory: Path):
     for f in directory.iterdir():
         # incluir apenas playlists válidas na listagem
         data = helpers.json_read_playlist(f)
-        if not helpers.is_playlist_valid(playlist_file=f, data=data):
+        if not helpers.is_playlist_valid(playlist_file=f, playlist_data=data):
             continue
         
         title = helpers.get_playlist_title(playlist_file=f)

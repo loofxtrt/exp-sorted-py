@@ -39,7 +39,7 @@ def get_cached_video_info(video_id: str, cache_file: Path = settings.CACHE_FILE)
     else:
         # solicitar a adição do novo vídeo ao cache
         video_url = helpers.build_youtube_url(video_id)
-        write_single_video_cache(video_url, cache_file)
+        write_video_cache(video_url, cache_file)
 
         # depois de atualizado, consultar o cache de novo
         updated_cache = helpers.json_read_cache(cache_file)
@@ -50,7 +50,7 @@ def get_cached_video_info(video_id: str, cache_file: Path = settings.CACHE_FILE)
         else:
             logger.error(f'erro ao tentar obter as informações do vídeo com o id: {video_id}')
 
-def extract_video_info(url: str, ytdl_instance: YoutubeDL) -> dict | None :
+def ytdlp_extract_video_info(url: str, ytdl_instance: YoutubeDL) -> dict | None :
     """
     usa a api do yt-dlp pra extrair dinamicamente os dados de um vídeo  
     por fazer uso da api, deve ser evitada na maioria dos casos  
@@ -93,7 +93,32 @@ def extract_video_info(url: str, ytdl_instance: YoutubeDL) -> dict | None :
 
     return video_data
 
-def write_single_video_cache(
+def insert_video_on_memory_cache(video_data: dict, cache_data: dict):
+    """
+    constrói a estrutura que um vídeo deve ter no cache  
+    isso NÃO ESCREVE nada no cache, apenas formata os dados do vídeo  
+      
+    deve ser usado por funções que realmente escrevam algo  
+    não precisa de return porque o cache_data passado pra função já é o mesmo que o chamador vai usar  
+      
+    @param video_data:  
+        dados do vídeo já parseados  
+      
+    @param cache_data:  
+        dados do cache já parseados
+    """
+
+    if not video_data:
+        logger.error(f'não foi possível adicionar o vídeo no cache da memória. os dados são inválidos: {video_data}')
+        return
+
+    # remover o id do vídeo dos dados e guarda-lo numa variável
+    # o id do vídeo é usado como chave no cache, e não como elemento comum,
+    # por isso precisa estar fora do dicionário, pra servir de parent pro resto dos dados
+    video_id = video_data.pop('id')
+    cache_data[video_id] = video_data
+
+def write_video_cache(
     url: str,
     cache_file: Path = settings.CACHE_FILE,
     ytdlp_options: dict = settings.YTDLP_OPTIONS
@@ -112,28 +137,24 @@ def write_single_video_cache(
     @param ytdlp_options:  
         opções da api do yt-dlp
     """
+    # obter os dados do vídeo e do cache atual
     ytdlp = YoutubeDL(ytdlp_options)
-    data = extract_video_info(url, ytdl_instance=ytdlp)
-    if not data:
+    video = ytdlp_extract_video_info(url, ytdl_instance=ytdlp)
+    
+    cache = helpers.json_read_cache(cache_file=cache_file)
+    
+    if not video or not cache:
         return
 
-    # remover o id do vídeo do retorno da função de extração de dados
-    # o id do vídeo é usado como chave no cache, e não como elemento comum,
-    # por isso precisa estar fora do dicionário
-    video_id = data.pop('id')
-
-    # ler o cache atual e adicionar o objeto dos dados do vídeo a essa lista do cache
-    # usando o id como a chave pro resto dos dados
-    cache = helpers.json_read_cache(cache_file)
-    cache[video_id] = data
-
     # atualizar o cache
+    insert_video_on_memory_cache(video_data=video, cache_data=cache)
     helpers.json_write_cache(data_to_write=cache, cache_file=cache_file)
 
 def update_full_cache(
     playlists_directory: Path,
     ytdlp_options: dict = settings.YTDLP_OPTIONS,
-    cache_file: Path = settings.CACHE_FILE
+    cache_file: Path = settings.CACHE_FILE,
+    skip_already_cached: bool = True,
     ):
     """
     atualiza o cache inteiro com base nos vídeos únicos que aparecem nas playlists  
@@ -151,7 +172,12 @@ def update_full_cache(
         arquivo do cache, onde as novas informações serão escritas  
     
     @param ytdlp_options:  
-        opções da api do yt-dlp
+        opções da api do yt-dlp  
+      
+    @param skip_already_cached:  
+        define se os vídeos que já têm suas informações guardadas no cache devem ser obtidos de novo  
+        caso seja falso, vai atualizar as infos de vídeos já existentes  
+        por ter que fazer todas as requisições de novo, demora mais pra concluir  
     """
     all_videos_ids = []
 
@@ -160,7 +186,7 @@ def update_full_cache(
     for pl in playlists_directory.iterdir():
         # verificar apenas se a playlist for válida
         data = helpers.json_read_playlist(pl)
-        if not helpers.is_playlist_valid(playlist_file=pl, data=data):
+        if not helpers.is_playlist_valid(playlist_file=pl, playlist_data=data):
             continue
 
         # entrar na lista de vídeos da playlist atual e obter o id dele
@@ -175,28 +201,30 @@ def update_full_cache(
         logger.info('nenhum vídeo encontrado em nenhuma playlist')
         return
     
-    # depois de obter todos os ids dos vídeos, extrai os dados deles
-    # e os estrutura como o acache final deve ser
-    cache = {}    
+    # depois de obter todos os ids dos vídeos, extrair os dados deles e atualizar o cache
+    old_cache = helpers.json_read_cache()
+    new_cache = {}
     ytdlp = YoutubeDL(ytdlp_options)
     
     for v_id in all_videos_ids:
-        url = helpers.build_youtube_url(v_id)
-        info = extract_video_info(url, ytdl_instance=ytdlp)
-        
-        if not info:
+        # por padrão, não atualizar vídeos que já estão no cache,
+        # só copia a versão atual deles pro cache novo, evitando chamadas de api
+        # isso faz essa ação demorar menos, mas pode deixar as views de alguns vídeos desatualizadas
+        if skip_already_cached and v_id in old_cache:
+            new_cache[v_id] = old_cache[v_id]
+
+            logger.info(f'vídeo não atualizado por já estar presente no cache: {v_id}')
             continue
         
-        # a função que extrai informações dos vídeos retorna o id deles
-        # como parte do dicionário, mas o cache usa o id como chave, não como elemento
-        #
-        # depois de usar o pop pra remover o id dos dados retornados,
-        # usa ele como chave pro resto dos dados
-        info.pop('id')
-        cache[v_id] = info
+        # incluir vídeos que ainda não estavam no cache
+        # se for explicitamente pedido, também atualiza os já existentes
+        url = helpers.build_youtube_url(v_id)
+        video = ytdlp_extract_video_info(url, ytdl_instance=ytdlp)
+        
+        insert_video_on_memory_cache(video_data=video, cache_data=new_cache)
     
     # escrever o cache atualizado
     helpers.json_write_cache(
-        data_to_write=cache,
+        data_to_write=new_cache,
         cache_file=cache_file
     )

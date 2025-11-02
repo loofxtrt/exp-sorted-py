@@ -13,7 +13,12 @@ def is_entry_present(playlist_data: dict, video_id: str):
     
     return False
 
-def create_playlist(playlist_title: str, output_dir: Path, playlist_description: str | None = None, assume_default: bool = False):
+def create_playlist(
+    playlist_title: str,
+    output_dir: Path,
+    playlist_description: str | None = None,
+    assume_default: bool = False
+    ):
     # obter a data iso já formatada e um id aleatório novo pra playlist
     current_date = helpers.get_iso_datetime()
     playlist_id = helpers.generate_random_id()
@@ -49,9 +54,24 @@ def create_playlist(playlist_title: str, output_dir: Path, playlist_description:
     helpers.json_write_playlist(final_path, data)
     logger.success(f'arquivo criado em {str(final_path)}')
 
-def delete_playlist(playlist_file: Path, assume_default = False):
-    if not helpers.is_playlist_valid(playlist_file):
-        logger.info('a playlist à ser deletada é inválida')
+def delete_playlist(
+    playlist_file: Path,
+    assume_default = False,
+    superficial_validation: bool = False
+    ):
+    """
+    deleta uma playlist inteira  
+      
+    @param assume_default:  
+        se for verdadeiro, não pede uma confirmação antes de apagar uma playlist  
+      
+    @param superficial_validation:  
+        se verdadeiro, garante que apenas arquivos que sejam estritamente playlists válidas sejam deletados  
+        é falso por padrão porque se um arquivo de playlist tiver uma formatação quebrada, ele pode ser mais difícil de deletar
+    """
+
+    if not helpers.is_playlist_valid(playlist_file=playlist_file, superficial_validation=superficial_validation):
+        logger.info('a playlist à ser deletada é inválida. verifique se o arquivo realmente representa uma ou o remova manualmente')
         return
     
     answer = helpers.confirm(
@@ -131,6 +151,7 @@ def remove_video(playlist_file: Path, video_id: str):
         logger.info(f'{video_id} não está presente na playlist {playlist_file.stem}')
 
 def move_video(origin_playlist: Path, destination_playlist: Path, video_id: str):
+    # obter os títulos só pra logging
     dest_title = helpers.get_playlist_title(destination_playlist)
     origin_title = helpers.get_playlist_title(origin_playlist)
 
@@ -147,7 +168,6 @@ def move_video(origin_playlist: Path, destination_playlist: Path, video_id: str)
                 logger.info(f'o mesmo vídeo ({video_id}) já existe na playlist de destino {dest_title}')
                 return
 
-            # se ainda não existir no destino, continua o movimento
             helpers.remove_video(origin_playlist, video_id)
             helpers.insert_video(destination_playlist, video_id)
 
@@ -159,11 +179,32 @@ def move_video(origin_playlist: Path, destination_playlist: Path, video_id: str)
         logger.info(f'o vídeo ({video_id}) não existe na playlist de origem {origin_title}')
         return
 
-def import_playlist(output_dir: Path, yt_playlist_url: str, new_title: str = None, ytdlp_options: dict = settings.YTDLP_OPTIONS):
+def import_playlist(
+    output_dir: Path,
+    yt_playlist_url: str,
+    new_title: str = None,
+    ytdlp_options: dict = settings.YTDLP_OPTIONS
+    ):
+    """
+    importa uma playlist do youtube pra uma playlist local  
+    pra funcionar, a playlist passada pra função deve ser pública ou não-listada  
+      
+    @param output_dir:  
+        diretório onde a playlist vai ser criada ao ser importada  
+      
+    @param yt_playlist_url:  
+        url da playlist do youtube  
+      
+    @param new_title:  
+        opcional. novo título pra quando a playlist for importada  
+        se não for passado, o título que estava no youtube vai ser usado no lugar  
+      
+    @param ytdlp_option:  
+        opções da api do yt-dlp
+    """
     logger.info(f'iniciando a importação de uma playlist do youtube: {yt_playlist_url}')
 
     # tentar obter os dados da playlist
-    # é importante que ela seja pública ou não-listada pra isso funcionar
     info = None
 
     try:
