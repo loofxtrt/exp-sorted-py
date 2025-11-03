@@ -182,8 +182,8 @@ def move_video(origin_playlist: Path, destination_playlist: Path, video_id: str)
 def import_playlist(
     output_dir: Path,
     yt_playlist_url: str,
-    new_title: str = None,
-    ytdlp_options: dict = settings.YTDLP_OPTIONS
+    ytdl_options: dict,
+    new_title: str = None
     ):
     """
     importa uma playlist do youtube pra uma playlist local  
@@ -199,7 +199,7 @@ def import_playlist(
         opcional. novo título pra quando a playlist for importada  
         se não for passado, o título que estava no youtube vai ser usado no lugar  
       
-    @param ytdlp_option:  
+    @param ytdl_option:  
         opções da api do yt-dlp
     """
     logger.info(f'iniciando a importação de uma playlist do youtube: {yt_playlist_url}')
@@ -208,7 +208,7 @@ def import_playlist(
     info = None
 
     try:
-        ytdl = YoutubeDL(ytdlp_options)
+        ytdl = YoutubeDL(ytdl_options)
         info = ytdl.extract_info(yt_playlist_url, download=False)
 
         logger.success('dados extraídos da playlist')

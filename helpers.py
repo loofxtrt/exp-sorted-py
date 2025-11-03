@@ -77,7 +77,7 @@ def build_youtube_url(video_id: str):
 
     return f'https://www.youtube.com/watch?v={video_id}'
 
-def extract_youtube_video_id(url: str):
+def extract_youtube_video_id(url: str, ytdl_options: dict):
     """
     extrai o id de um vídeo por uma url do youtube  
     o yt-dlp já tem um método pra obter o id, mas esse método é mais rápido  
@@ -98,7 +98,7 @@ def extract_youtube_video_id(url: str):
     logger.warning('erro ao extrair id com regex. tentando novamente com a api do yt-dlp')
 
     try:
-        ytdl = YoutubeDL(settings.YTDLP_OPTIONS)
+        ytdl = YoutubeDL(ytdl_options)
         info = ytdl.extract_info(url, download=False)
 
         return info.get('id', None)
@@ -229,7 +229,8 @@ def json_read_playlist(playlist_file: Path):
 def json_write_playlist(playlist_file: Path, data_to_write: dict):
     """
     escreve dados estruturados pra representar uma playlist  
-    não guarda url de vídeos, apenas o id deles
+    não guarda url de vídeos, apenas o id deles  
+    toda vez que é chamada, atualiza a data de modificação da playlist
     """
 
     data_to_write['last-modified-at'] = get_iso_datetime()
@@ -237,7 +238,7 @@ def json_write_playlist(playlist_file: Path, data_to_write: dict):
     with playlist_file.open('w', encoding='utf-8') as f:
         json.dump(data_to_write, f, indent=4, ensure_ascii=False)
 
-def json_read_cache(cache_file: Path = settings.CACHE_FILE):
+def json_read_cache(cache_file: Path):
     """lê o arquivo de cache atual e retorna o seu conteúdo"""
     
     if not cache_file.exists() or cache_file.stat().st_size == 0:
@@ -251,7 +252,7 @@ def json_read_cache(cache_file: Path = settings.CACHE_FILE):
 
     return current_cache
 
-def json_write_cache(data_to_write: dict, cache_file: Path = settings.CACHE_FILE):
+def json_write_cache(data_to_write: dict, cache_file: Path):
     """
     escreve informações de vídeos no cache  
     serve pra salvar dados já obtidos e evitar chamadas extras pra api do yt-dlp  

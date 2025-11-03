@@ -5,7 +5,7 @@ from pathlib import Path
 from yt_dlp import YoutubeDL
 from loguru import logger
 
-def is_video_cached(video_id: str, cache_file: Path = settings.CACHE_FILE) -> bool:
+def is_video_cached(video_id: str, cache_file: Path) -> bool:
     """
     consulta o cache pra verificar A PRESENÇA de um vídeo  
     essa função NÃO obtém as informações daquele vídeo, só confirma se ele de fato existe ou não
@@ -15,7 +15,7 @@ def is_video_cached(video_id: str, cache_file: Path = settings.CACHE_FILE) -> bo
     cache = helpers.json_read_cache(cache_file)
     return video_id in cache
 
-def get_cached_video_info(video_id: str, cache_file: Path = settings.CACHE_FILE):
+def get_cached_video_info(video_id: str, cache_file: Path):
     """
     consulta o cache pra tentar obter os dados de um vídeo sem precisar chamar a api do yt-dlp  
     se o vídeo já não tiver sido cacheado, a api então é chamada, e depois o cache é reconsultado  
@@ -50,7 +50,7 @@ def get_cached_video_info(video_id: str, cache_file: Path = settings.CACHE_FILE)
         else:
             logger.error(f'erro ao tentar obter as informações do vídeo com o id: {video_id}')
 
-def ytdlp_extract_video_info(url: str, ytdl_instance: YoutubeDL) -> dict | None :
+def ytdl_extract_video_info(url: str, ytdl_instance: YoutubeDL) -> dict | None :
     """
     usa a api do yt-dlp pra extrair dinamicamente os dados de um vídeo  
     por fazer uso da api, deve ser evitada na maioria dos casos  
@@ -120,8 +120,8 @@ def insert_video_on_memory_cache(video_data: dict, cache_data: dict):
 
 def write_video_cache(
     url: str,
-    cache_file: Path = settings.CACHE_FILE,
-    ytdlp_options: dict = settings.YTDLP_OPTIONS
+    cache_file: Path,
+    ytdl_options: dict
     ):
     """
     escreve um único vídeo no cache, criando uma instância da api em toda chamada  
@@ -134,14 +134,14 @@ def write_video_cache(
     @param cache_file:  
         arquivo do cache, onde as novas informações serão escritas  
     
-    @param ytdlp_options:  
+    @param ytdl_options:  
         opções da api do yt-dlp
     """
     # obter os dados do vídeo e do cache atual
-    ytdlp = YoutubeDL(ytdlp_options)
-    video = ytdlp_extract_video_info(url, ytdl_instance=ytdlp)
+    ytdl = YoutubeDL(ytdl_options)
+    video = ytdl_extract_video_info(url, ytdl_instance=ytdl)
     
-    cache = helpers.json_read_cache(cache_file=cache_file)
+    cache = helpers.json_read_cache(cache_file)
     
     if not video or not cache:
         return
@@ -152,8 +152,8 @@ def write_video_cache(
 
 def update_full_cache(
     playlists_directory: Path,
-    ytdlp_options: dict = settings.YTDLP_OPTIONS,
-    cache_file: Path = settings.CACHE_FILE,
+    ytdl_options: dict,
+    cache_file: Path,
     skip_already_cached: bool = True,
     ):
     """
@@ -171,7 +171,7 @@ def update_full_cache(
     @param cache_file:  
         arquivo do cache, onde as novas informações serão escritas  
     
-    @param ytdlp_options:  
+    @param ytdl_options:  
         opções da api do yt-dlp  
       
     @param skip_already_cached:  
@@ -202,9 +202,9 @@ def update_full_cache(
         return
     
     # depois de obter todos os ids dos vídeos, extrair os dados deles e atualizar o cache
-    old_cache = helpers.json_read_cache()
+    old_cache = helpers.json_read_cache(cache_file)
     new_cache = {}
-    ytdlp = YoutubeDL(ytdlp_options)
+    ytdl = YoutubeDL(ytdl_options)
     
     for v_id in all_videos_ids:
         # por padrão, não atualizar vídeos que já estão no cache,
@@ -219,7 +219,7 @@ def update_full_cache(
         # incluir vídeos que ainda não estavam no cache
         # se for explicitamente pedido, também atualiza os já existentes
         url = helpers.build_youtube_url(v_id)
-        video = ytdlp_extract_video_info(url, ytdl_instance=ytdlp)
+        video = ytdl_extract_video_info(url, ytdl_instance=ytdl)
         
         insert_video_on_memory_cache(video_data=video, cache_data=new_cache)
     

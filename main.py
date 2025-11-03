@@ -3,9 +3,11 @@ import manager
 import visualizer
 import helpers
 import cache
+import settings as stg
 from pathlib import Path
 
-testing_folder = Path('./tests')
+#testing_folder = Path('./tests')
+settings = stg.Settings()
 
 @click.command()
 @click.argument('title')
@@ -59,7 +61,8 @@ def import_pl(url, new_title):
     manager.import_playlist(
         new_title=new_title,
         output_dir=testing_folder,
-        yt_playlist_url=url
+        yt_playlist_url=url,
+        ytdl_options=settings.ytdl_options
     )
 
 @click.command()
@@ -95,8 +98,14 @@ def move(origin_playlist, destination_playlist, url):
 def update_cache(playlists_directory, include_all):
     cache.update_full_cache(
         playlists_directory=Path(playlists_directory),
-        skip_already_cached=not update_already_cached
+        skip_already_cached=not include_all,
+        cache_file=settings.video_cache_file,
+        ytdl_options=settings.ytdl_options
     )
+
+@click.command()
+def reset_settings():
+    settings.reset_or_set()
 
 @click.group()
 def cli():
@@ -111,6 +120,8 @@ cli.add_command(view_dir)
 cli.add_command(view_pl)
 cli.add_command(move)
 cli.add_command(update_cache)
+cli.add_command(reset_settings)
 
 if __name__ == '__main__':
+    settings.load()
     cli()
