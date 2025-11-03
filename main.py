@@ -6,18 +6,18 @@ import cache
 import settings as stg
 from pathlib import Path
 
-#testing_folder = Path('./tests')
 settings = stg.Settings()
 
 @click.command()
 @click.argument('title')
+@click.argument('output-dir')
 @click.option('--description', '-d')
 @click.option('--assume-default', '-y', is_flag=True)
-def create(title, description, assume_default):
+def create(title, output_dir, description, assume_default):
     manager.create_playlist(
         playlist_title=title,
         playlist_description=description,
-        output_dir=testing_folder,
+        output_dir=output_dir,
         assume_default=assume_default
     )
 
@@ -35,7 +35,7 @@ def delete(playlist, deep_validation):
 @click.argument('urls', nargs=-1)
 def insert(urls, playlist):
     for u in urls:
-        video_id = helpers.extract_youtube_video_id(u)
+        video_id = helpers.extract_youtube_video_id(url=u, ytdl_options=settings.ytdl_options)
 
         manager.insert_video(
             video_id=video_id,
@@ -47,7 +47,7 @@ def insert(urls, playlist):
 @click.argument('urls', nargs=-1)
 def remove(urls, playlist):
     for u in urls:
-        video_id = helpers.extract_youtube_video_id(u)
+        video_id = helpers.extract_youtube_video_id(url=u, ytdl_options=settings.ytdl_options)
 
         manager.remove_video(
             video_id=video_id,
@@ -56,11 +56,12 @@ def remove(urls, playlist):
 
 @click.command(name='import')
 @click.argument('url')
+@click.argument('output-dir')
 @click.option('--new-title', '-nt')
-def import_pl(url, new_title):
+def import_pl(url, output_dir, new_title):
     manager.import_playlist(
         new_title=new_title,
-        output_dir=testing_folder,
+        output_dir=output_dir,
         yt_playlist_url=url,
         ytdl_options=settings.ytdl_options
     )
@@ -89,12 +90,12 @@ def move(origin_playlist, destination_playlist, url):
     manager.move_video(
         origin_playlist=Path(origin_playlist),
         destination_playlist=Path(destination_playlist),
-        video_id=helpers.extract_youtube_video_id(url)
+        video_id=helpers.extract_youtube_video_id(url=url, ytdl_options=settings.ytdl_options)
     )
 
 @click.command()
 @click.argument('playlists-directory')
-@click.option('--include-all', '-ia')
+@click.option('--include-all', '-ia', is_flag=True)
 def update_cache(playlists_directory, include_all):
     cache.update_full_cache(
         playlists_directory=Path(playlists_directory),

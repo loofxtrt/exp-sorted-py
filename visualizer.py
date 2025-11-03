@@ -1,6 +1,6 @@
 import cache
 import helpers
-
+import settings as stg
 from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
@@ -74,8 +74,9 @@ def build_video_row(
     @param desc_max:
         quantos caracteres a descrição pode ter antes de ser truncada
     """
+    settings = stg.Settings()
+    data = cache.get_cached_video_info(video_id, cache_file=settings.video_cache_file)
 
-    data = cache.get_cached_video_info(video_id)
     if not data:
         return
 
@@ -164,6 +165,9 @@ def view_playlist(playlist_file: Path, show_description: bool = False):
     """
 
     data = helpers.json_read_playlist(playlist_file)
+    if not data:
+        logger.error('erro ao visualizar a playlist. os dados são inválidos')
+        return
 
     # tabela de todos os vídeos da playlists
     table = make_table()
@@ -195,6 +199,7 @@ def view_playlist(playlist_file: Path, show_description: bool = False):
         Title: {playlist_title}
         Description: {data.get('description', '')}
         Contains: {contains}
+        ID: {data.get('id', '')}
     """).strip()
 
     panel = Panel(
