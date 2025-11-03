@@ -1,5 +1,5 @@
 const API_ADDRESS = 'http://127.0.0.1:5000';
-const playlistId = 'xKFHDg6h';
+const playlistId = 'DtVRqDNU';
 
 async function loadPlaylist(playlistId) {
     // requisitar os dados da playlist pra api

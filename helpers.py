@@ -137,6 +137,7 @@ def get_playlist_file_by_id(playlist_id: str, directory: Path):
         if data.get('id') == playlist_id:
             return f
     
+    logger.error(f'erro ao obter o arquivo da playlist com o id: {playlist_id}')
     return None
 
 def get_playlist_title(playlist_file: Path):
@@ -195,7 +196,9 @@ def is_playlist_valid(playlist_file: Path, playlist_data: dict | None = None, su
     return True
 
 def generate_random_id(id_length: int = 8):
-    """gera um id usando todas as letras, numeros e alguns caracteres especiais"""
+    """
+    gera um id usando todas as letras, numeros e alguns caracteres especiais
+    """
 
     # obter uma string com todas as letras do alfabeto (upper e lower)
     # todos os digitos numéricos (0-9)
@@ -212,7 +215,9 @@ def generate_random_id(id_length: int = 8):
     return final_id
 
 def json_read_playlist(playlist_file: Path):
-    """lê e retorna os dados dentro de um arquivo que representa uma playlist"""
+    """
+    lê e retorna os dados dentro de um arquivo que representa uma playlist
+    """
 
     if not playlist_file.is_file():
         logger.warning(f'o caminho {playlist_file} não representa um arquivo')
@@ -244,7 +249,9 @@ def json_write_playlist(playlist_file: Path, data_to_write: dict):
         json.dump(data_to_write, f, indent=4, ensure_ascii=False)
 
 def json_read_cache(cache_file: Path):
-    """lê o arquivo de cache atual e retorna o seu conteúdo"""
+    """
+    lê o arquivo de cache atual e retorna o seu conteúdo
+    """
     
     if not cache_file.exists() or cache_file.stat().st_size == 0:
         # se o arquivo ainda não existir ou estiver vazio, cria um objeto vazio como fallback

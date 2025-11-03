@@ -65,6 +65,7 @@ def ytdl_extract_video_info(url: str, ytdl_instance: YoutubeDL) -> dict | None :
     @param ytdl_instance:  
         instância já criada da api do yt-dlp. isso evita que múltiplas instâncias precisem ser criadas
     """
+    
     try:
         info = ytdl_instance.extract_info(url, download=False)
     except Exception as err:
@@ -138,6 +139,7 @@ def write_video_cache(
     @param ytdl_options:  
         opções da api do yt-dlp
     """
+
     # obter os dados do vídeo e do cache atual
     ytdl = YoutubeDL(ytdl_options)
     video = ytdl_extract_video_info(url, ytdl_instance=ytdl)
@@ -180,6 +182,7 @@ def update_full_cache(
         caso seja falso, vai atualizar as infos de vídeos já existentes  
         por ter que fazer todas as requisições de novo, demora mais pra concluir  
     """
+
     all_videos_ids = []
 
     # verificar todas as playlists criadas, partindo do diretório passado pra função

@@ -5,6 +5,10 @@ SETTINGS_DIRECTORY = Path.home() / '.config' / 'sorted' # INALTERÁVEL
 SETTINGS_FILE = SETTINGS_DIRECTORY / 'settings.json' # INALTERÁVEL
 
 class Settings:
+    """
+    ao ser instânciada, pode carregar ou alterar os arquivos de configuração  
+    serve principalmente pra obter o valor atualizado dos argumentos declaradas na configuração do usuário
+    """
     def __init__(self):
         # valores padrão (são sobreescritos pelo load)
         self.cache_directory = SETTINGS_DIRECTORY / 'cache'
@@ -57,7 +61,9 @@ class Settings:
         return self.cache_directory / 'videos.json'
 
 def write_settings(cache_directory: Path, ytdl_options: dict):
-    """escreve argumentos no arquivo de configuração"""
+    """
+    escreve argumentos no arquivo de configuração
+    """
     # criar o dir de configurações caso ele não exista
     SETTINGS_DIRECTORY.mkdir(exist_ok=True, parents=True)
 

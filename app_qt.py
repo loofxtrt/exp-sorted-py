@@ -89,24 +89,30 @@ def resize_pixmap_16_9(width: int, pixmap: QPixmap) -> QPixmap:
     
     return pixmap
 
-def thumbnail_as_pixmap(thumbnail_url: str, fallback_thumbnail: str) -> QPixmap:
+def thumbnail_as_pixmap(thumbnail_url: str, fallback_thumbnail: str, skip_download: bool = True) -> QPixmap:
     """
     faz o download na memória da imagem fornecida a essa função  
     depois, a retorna como um pixmap que pode ser aplicado em labels pra exibir a imagem
     """
-    # primeiro faz um request pra baixar imagem da thumbnail na memória
-    # se o códio de resposta for 200, significa que o download foi bem sucedido
-    # se não conseguir baixar, usa uma imagem de fallback no lugar
-    try:
-        response = requests.get(thumbnail_url)
-        response.raise_for_status() # lançar um erro caso o código de resposta não seja 200
+    pixmap_thumbnail = None
 
-        pixmap_thumbnail = QPixmap()
-        pixmap_thumbnail.loadFromData(response.content)
-    except requests.exceptions.RequestException as err:
-        logger.error(f'erro ao tentar baixar uma thumbnail, usando fallback: {err}')
+    if not skip_download:
+        # primeiro faz um request pra baixar imagem da thumbnail na memória
+        # se o códio de resposta for 200, significa que o download foi bem sucedido
+        # se não conseguir baixar, usa uma imagem de fallback no lugar
+        try:
+            response = requests.get(thumbnail_url)
+            response.raise_for_status() # lançar um erro caso o código de resposta não seja 200
+
+            pixmap_thumbnail = QPixmap()
+            pixmap_thumbnail.loadFromData(response.content)
+        except requests.exceptions.RequestException as err:
+            logger.error(f'erro ao tentar baixar uma thumbnail, usando fallback: {err}')
+
+    # usar o fallback se o resto da função não conseguiu sobreescrever o none inicial
+    if pixmap_thumbnail is None:
         pixmap_thumbnail = QPixmap(fallback_thumbnail)
-
+    
     return pixmap_thumbnail
 
 def build_playlist_list(playlist_data: dict, cache_file: Path, fallback_thumbnail: str):
@@ -157,6 +163,12 @@ def build_sidebar(playlist_file: Path, fallback_thumbnail: str, cache_file: Path
 
     creation_label = QLabel(f'Last modified at: {playlist_data.get('created-at')}')
     sidebar_vbox.addWidget(creation_label)
+
+    # quantidade de vídeos
+    video_count = len(entries)
+    handle_plural = 'video' if video_count == 1 else 'videos'
+    video_count_label = QLabel(f'Contains {video_count} {handle_plural}')
+    sidebar_vbox.addWidget(video_count_label)
 
     # criar o container
     sidebar_widget = QWidget()

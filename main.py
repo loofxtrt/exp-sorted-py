@@ -12,8 +12,8 @@ settings = stg.Settings()
 @click.command(help='Cria uma playlist nova')
 @click.argument('title')
 @click.argument('output-dir')
-@click.option('--description', '-d')
-@click.option('--assume-default', '-y', is_flag=True)
+@click.option('--description', '-d', help='Incluir uma descrição na playlist')
+@click.option('--assume-default', '-y', is_flag=True, help='Assumir que se uma playlist no mesmo caminho já existir, ela deve ser sobreescrita')
 def create(title, output_dir, description, assume_default):
     manager.create_playlist(
         playlist_title=title,
@@ -24,8 +24,8 @@ def create(title, output_dir, description, assume_default):
 
 @click.command(help='Deleta uma playlist inteira')
 @click.argument('playlist')
-@click.option('--assume-default', '-y', is_flag=True)
-@click.option('--deep-validation', '-dv', is_flag=True)
+@click.option('--assume-default', '-y', is_flag=True, help='Assumir que a playlist deve ser deletada sem confirmação')
+@click.option('--deep-validation', '-dv', is_flag=True, help='Se presente, vai exigir que uma playlist seja 100% válida pra ser deletada com esse comando')
 def delete(playlist, assume_default, deep_validation):
     manager.delete_playlist(
         playlist_file=Path(playlist),
@@ -36,7 +36,7 @@ def delete(playlist, assume_default, deep_validation):
 @click.command(help='Adiciona vídeos à uma playlist')
 @click.argument('playlist')
 @click.argument('urls', nargs=-1)
-@click.option('--assume-default', '-y', is_flag=True)
+@click.option('--assume-default', '-y', is_flag=True, help='Assumir que a playlist deve ser criada se ela não existir ainda')
 def insert(playlist, urls, assume_default):
     for u in urls:
         video_id = helpers.extract_youtube_video_id(url=u, ytdl_options=settings.ytdl_options)
@@ -62,7 +62,7 @@ def remove(playlist, urls):
 @click.command(name='import', help='Importa uma playlist do YouTube e a converte para uma playlist local')
 @click.argument('url', type=str)
 @click.argument('output-dir')
-@click.option('--new-title', '-nt')
+@click.option('--new-title', '-nt', help='Novo título a ser atribuído a playlist. Se não for passado, ela herda o título do YouTube')
 def import_pl(url, output_dir, new_title):
     importation.import_playlist(
         new_title=new_title,
@@ -80,7 +80,7 @@ def view_dir(directory):
 
 @click.command(help='Visualiza uma playlist individual, incluindo todos os vídeos que ela contém')
 @click.argument('playlist')
-@click.option('--show-desc', '-sd', is_flag=True)
+@click.option('--show-desc', '-sd', is_flag=True, help='Inclui a descrição dos vídeos na tabela')
 def view_pl(playlist, show_desc):
     visualizer.view_playlist(
         playlist_file=Path(playlist),
@@ -100,7 +100,7 @@ def move(origin_playlist, destination_playlist, url):
 
 @click.command(help='Atualiza o cache de vídeos do software, removendo os vídeos órfãos e incluindo os novos')
 @click.argument('playlists-directory')
-@click.option('--include-all', '-ia', is_flag=True)
+@click.option('--include-all', '-ia', is_flag=True, help='Não ignora os vídeos que já estavam presentes no cache, os atualizando')
 def update_cache(playlists_directory, include_all):
     cache.update_full_cache(
         playlists_directory=Path(playlists_directory),

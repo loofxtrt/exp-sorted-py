@@ -6,7 +6,10 @@ from yt_dlp import YoutubeDL
 from loguru import logger
 
 def extract_youtube_playlist_data(yt_playlist_url: str, ytdl_options: dict) -> dict:
-    """usa a api do yt-dlp pra obter os dados de uma playlist"""
+    """
+    usa a api do yt-dlp pra obter os dados de uma playlist
+    """
+
     try:
         ytdl = YoutubeDL(ytdl_options)
         info = ytdl.extract_info(yt_playlist_url, download=False)
@@ -22,6 +25,7 @@ def resolve_imported_playlist_title(yt_playlist_data: dict):
     baseado no título original de uma playlist do youtube, se necessário,  
     sanitiza esse título pra que ele não tenha nenhum caractere inválido pra criação de um arquivo
     """
+    
     title = yt_playlist_data.get('title', '')
     
     # conferir se o título obtido não tem nenhum caractere inválido
@@ -66,6 +70,7 @@ def import_playlist(
     @param ytdl_option:  
         opções da api do yt-dlp
     """
+    
     logger.info(f'iniciando a importação de uma playlist do youtube: {yt_playlist_url}')
 
     info = extract_youtube_playlist_data(yt_playlist_url, ytdl_options)

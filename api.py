@@ -1,4 +1,5 @@
-# python3 api.py + node test.js
+# python3 api.py + node main.js
+# http://127.0.0.1:5000
 
 import cache
 import helpers
