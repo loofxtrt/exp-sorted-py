@@ -215,14 +215,19 @@ def json_read_playlist(playlist_file: Path):
     """lê e retorna os dados dentro de um arquivo que representa uma playlist"""
 
     if not playlist_file.is_file():
+        logger.warning(f'o caminho {playlist_file} não representa um arquivo')
         return
 
-    with playlist_file.open('r', encoding='utf-8') as f:
-        data = json.load(f)
+    try:
+        with playlist_file.open('r', encoding='utf-8') as f:
+            data = json.load(f)
 
-        # se não achar nenhum dado, o arquivo tá vazio
-        if data is None:
-            logger.info(f'o arquivo {playlist_file} está vazio ou não segue a estrutura de uma playlist')
+            # se não achar nenhum dado, o arquivo tá vazio
+            if data is None:
+                logger.info(f'o arquivo {playlist_file} está vazio ou não segue a estrutura de uma playlist')
+    except Exception as err:
+        logger.error(f'erro ao tentar ler a playlist {get_playlist_title(playlist_file)}: {err}')
+        return
 
     return data
 

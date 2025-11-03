@@ -103,10 +103,15 @@ def insert_video(playlist_file: Path, video_id: str, assume_default = False):
         if not answer:
             return
 
+        # também garante que a estrutura de diretórios inteira passada exista
+        playlist_file.parent.mkdir(exist_ok=True, parents=True)
         create_playlist(playlist_title=playlist_file.stem, output_dir=playlist_file.parent)
 
     # ler os dados atuais da playlist
     data = helpers.json_read_playlist(playlist_file)
+    
+    if not helpers.is_playlist_valid(playlist_file=playlist_file, playlist_data=data):
+        return
 
     # verificação pra evitar duplicação acidental de vídeos
     existing = is_entry_present(data, video_id)

@@ -23,29 +23,33 @@ def create(title, output_dir, description, assume_default):
 
 @click.command()
 @click.argument('playlist')
+@click.option('--assume-default', '-y', is_flag=True)
 @click.option('--deep-validation', '-dv', is_flag=True)
-def delete(playlist, deep_validation):
+def delete(playlist, assume_default, deep_validation):
     manager.delete_playlist(
         playlist_file=Path(playlist),
+        assume_default=assume_default,
         superficial_validation=deep_validation
     )
 
 @click.command()
 @click.argument('playlist')
 @click.argument('urls', nargs=-1)
-def insert(urls, playlist):
+@click.option('--assume-default', '-y', is_flag=True)
+def insert(playlist, urls, assume_default):
     for u in urls:
         video_id = helpers.extract_youtube_video_id(url=u, ytdl_options=settings.ytdl_options)
 
         manager.insert_video(
             video_id=video_id,
-            playlist_file=Path(playlist)
+            playlist_file=Path(playlist),
+            assume_default=assume_default
         )
 
 @click.command()
 @click.argument('playlist')
 @click.argument('urls', nargs=-1)
-def remove(urls, playlist):
+def remove(playlist, urls):
     for u in urls:
         video_id = helpers.extract_youtube_video_id(url=u, ytdl_options=settings.ytdl_options)
 

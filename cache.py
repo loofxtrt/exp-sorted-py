@@ -1,6 +1,6 @@
 import json
 import helpers
-import settings
+import settings as stg
 from pathlib import Path
 from yt_dlp import YoutubeDL
 from loguru import logger
@@ -38,8 +38,9 @@ def get_cached_video_info(video_id: str, cache_file: Path):
         return video_data
     else:
         # solicitar a adição do novo vídeo ao cache
+        settings = stg.Settings()
         video_url = helpers.build_youtube_url(video_id)
-        write_video_cache(video_url, cache_file)
+        write_video_cache(video_url, cache_file, settings.ytdl_options)
 
         # depois de atualizado, consultar o cache de novo
         updated_cache = helpers.json_read_cache(cache_file)
