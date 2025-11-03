@@ -184,7 +184,7 @@ def update_full_cache(
 
     # verificar todas as playlists criadas, partindo do diretório passado pra função
     # essa primeira parte foca em obter os ids de todos os vídeos únicos em todas as playlists
-    for pl in playlists_directory.iterdir():
+    for pl in playlists_directory.rglob('*.json'):
         # verificar apenas se a playlist for válida
         data = helpers.json_read_playlist(pl)
         if not helpers.is_playlist_valid(playlist_file=pl, playlist_data=data):

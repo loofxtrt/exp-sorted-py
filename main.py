@@ -3,12 +3,13 @@ import manager
 import visualizer
 import helpers
 import cache
+import importation
 import settings as stg
 from pathlib import Path
 
 settings = stg.Settings()
 
-@click.command()
+@click.command(help='Cria uma playlist nova')
 @click.argument('title')
 @click.argument('output-dir')
 @click.option('--description', '-d')
@@ -21,7 +22,7 @@ def create(title, output_dir, description, assume_default):
         assume_default=assume_default
     )
 
-@click.command()
+@click.command(help='Deleta uma playlist inteira')
 @click.argument('playlist')
 @click.option('--assume-default', '-y', is_flag=True)
 @click.option('--deep-validation', '-dv', is_flag=True)
@@ -32,7 +33,7 @@ def delete(playlist, assume_default, deep_validation):
         superficial_validation=deep_validation
     )
 
-@click.command()
+@click.command(help='Adiciona vídeos à uma playlist')
 @click.argument('playlist')
 @click.argument('urls', nargs=-1)
 @click.option('--assume-default', '-y', is_flag=True)
@@ -46,7 +47,7 @@ def insert(playlist, urls, assume_default):
             assume_default=assume_default
         )
 
-@click.command()
+@click.command(help='Remove vídeos de uma playlist')
 @click.argument('playlist')
 @click.argument('urls', nargs=-1)
 def remove(playlist, urls):
@@ -58,26 +59,26 @@ def remove(playlist, urls):
             playlist_file=Path(playlist)
         )
 
-@click.command(name='import')
-@click.argument('url')
+@click.command(name='import', help='Importa uma playlist do YouTube e a converte para uma playlist local')
+@click.argument('url', type=str)
 @click.argument('output-dir')
 @click.option('--new-title', '-nt')
 def import_pl(url, output_dir, new_title):
-    manager.import_playlist(
+    importation.import_playlist(
         new_title=new_title,
-        output_dir=output_dir,
+        output_dir=Path(output_dir),
         yt_playlist_url=url,
         ytdl_options=settings.ytdl_options
     )
 
-@click.command()
+@click.command(help='Visualiza um diretório e lista todas as playlists válidas que ele contém')
 @click.argument('directory')
 def view_dir(directory):
     visualizer.view_directory(
         directory=Path(directory)
     )
 
-@click.command()
+@click.command(help='Visualiza uma playlist individual, incluindo todos os vídeos que ela contém')
 @click.argument('playlist')
 @click.option('--show-desc', '-sd', is_flag=True)
 def view_pl(playlist, show_desc):
@@ -86,7 +87,7 @@ def view_pl(playlist, show_desc):
         show_description=show_desc
     )
 
-@click.command()
+@click.command(help='Move um vídeo de uma playlist para a outra')
 @click.argument('origin-playlist')
 @click.argument('destination-playlist')
 @click.argument('url')
@@ -97,7 +98,7 @@ def move(origin_playlist, destination_playlist, url):
         video_id=helpers.extract_youtube_video_id(url=url, ytdl_options=settings.ytdl_options)
     )
 
-@click.command()
+@click.command(help='Atualiza o cache de vídeos do software, removendo os vídeos órfãos e incluindo os novos')
 @click.argument('playlists-directory')
 @click.option('--include-all', '-ia', is_flag=True)
 def update_cache(playlists_directory, include_all):
@@ -108,7 +109,7 @@ def update_cache(playlists_directory, include_all):
         ytdl_options=settings.ytdl_options
     )
 
-@click.command()
+@click.command(help='Reseta todas as configurações do usuário de volta para as configurações padrão')
 def reset_settings():
     settings.reset_or_set()
 

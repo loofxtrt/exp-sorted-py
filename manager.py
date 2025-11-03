@@ -19,6 +19,13 @@ def create_playlist(
     playlist_description: str | None = None,
     assume_default: bool = False
     ):
+    # garante que o título é válido pra ser o nome de um arquivo
+    try:
+        pathvalidate.validate_filename(playlist_title)
+    except pathvalidate.ValidationError:
+        logger.error('o título contém caracteres inválidos para a criação de um arquivo')
+        return
+
     # obter a data iso já formatada e um id aleatório novo pra playlist
     current_date = helpers.get_iso_datetime()
     playlist_id = helpers.generate_random_id()
@@ -163,18 +170,19 @@ def move_video(origin_playlist: Path, destination_playlist: Path, video_id: str)
     # entra na playlist de origem
     # e pra cada entrada, checa se o id é igual ao do vídeo alvo de movimento
     origin_data = helpers.json_read_playlist(origin_playlist)
+    dest_data = helpers.json_read_playlist(destination_playlist)
 
     for entry in origin_data.get('entries'):
         # se encontrar o vídeo na playlist de origem, remove ele de lá
         # e adiciona esse mesmo vídeo na playlist de destino
         if entry.get('id') == video_id:
             # se o vídeo que está tentando ser movido já existe na playlist de destino, não continua
-            if helpers.is_entry_present(destination_playlist, video_id):
+            if is_entry_present(dest_data, video_id):
                 logger.info(f'o mesmo vídeo ({video_id}) já existe na playlist de destino {dest_title}')
                 return
 
-            helpers.remove_video(origin_playlist, video_id)
-            helpers.insert_video(destination_playlist, video_id)
+            remove_video(origin_playlist, video_id)
+            insert_video(destination_playlist, video_id)
 
             logger.success(f'vídeo movido de {origin_title} para {dest_title}')
         
@@ -183,80 +191,3 @@ def move_video(origin_playlist: Path, destination_playlist: Path, video_id: str)
         # se não encontrar o vídeo na playlist de origem
         logger.info(f'o vídeo ({video_id}) não existe na playlist de origem {origin_title}')
         return
-
-def import_playlist(
-    output_dir: Path,
-    yt_playlist_url: str,
-    ytdl_options: dict,
-    new_title: str = None
-    ):
-    """
-    importa uma playlist do youtube pra uma playlist local  
-    pra funcionar, a playlist passada pra função deve ser pública ou não-listada  
-      
-    @param output_dir:  
-        diretório onde a playlist vai ser criada ao ser importada  
-      
-    @param yt_playlist_url:  
-        url da playlist do youtube  
-      
-    @param new_title:  
-        opcional. novo título pra quando a playlist for importada  
-        se não for passado, o título que estava no youtube vai ser usado no lugar  
-      
-    @param ytdl_option:  
-        opções da api do yt-dlp
-    """
-    logger.info(f'iniciando a importação de uma playlist do youtube: {yt_playlist_url}')
-
-    # tentar obter os dados da playlist
-    info = None
-
-    try:
-        ytdl = YoutubeDL(ytdl_options)
-        info = ytdl.extract_info(yt_playlist_url, download=False)
-
-        logger.success('dados extraídos da playlist')
-    except Exception as err:
-        logger.error(f'erro ao importar a playlist: {err}')
-
-    if not info:
-        return
-    
-    # definir/verificar o título que a playlist vai ter
-    # se o usuário não passar explicitamente um título novo pra ela,
-    # ela tenta usar o título que tava no youtube
-    if new_title:
-        if not pathvalidate.validate_filename(new_title):
-            logger.error('o novo título contém caracteres inválidos para a criação de um arquivo')
-            return
-    else:
-        logger.info('o título da playlist será herdado do youtube')
-        new_title = info['title']
-
-        # conferir se o título obtido não tem nenhum caractere inválido
-        # se tiver, sanitiza ele antes antes de aplicar
-        try:
-            pathvalidate.validate_filename(new_title)
-            logger.success(f'título validado: {new_title}')
-        except pathvalidate.ValidationError:
-            logger.error(f'iniciando sanitização. título com caracteres inválidos: {new_title}')
-            
-            try:
-                new_title = pathvalidate.sanitize_filename(new_title)
-                logger.success(f'título sanitizado: {new_title}')
-            except:
-                logger.error(f'a sanitização do título {new_title} falhou. tente definir explicitamente um novo título para a playlist importada')
-    
-    # cria a playlist e reconstrói como é o novo caminho dela
-    create_playlist(playlist_title=new_title, output_dir=output_dir)
-    final_path = output_dir / (new_title + '.json')
-
-    # passar todas as urls da playlist do youtube pra playlist local
-    # identificando todas as urls de vídeos do campo 'entries' da playlist (vinda do yt-dlp) e obtendo os ids
-    logger.success('playlist criada. iniciando a importação dos vídeos dela')
-    urls = [entry['webpage_url'] for entry in info['entries'] if entry]
-
-    for u in urls:
-        video_id = helpers.extract_youtube_video_id(u)
-        insert_video(playlist_file=final_path, video_id=video_id)
