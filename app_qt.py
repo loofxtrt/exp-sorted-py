@@ -173,11 +173,15 @@ def build_sidebar(playlist_file: Path, fallback_thumbnail: str, cache_file: Path
     # criar o container
     sidebar_widget = QWidget()
     sidebar_widget.setFixedWidth(300)
-    #sidebar_widget.setStyleSheet('background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #5a5a5a, stop: 1 #15161d); border-radius: 5px;')
-    sidebar_widget.setStyleSheet('background-color: #5a5a5a; border-radius: 5px;')
+    #sidebar_widget.setStyleSheet('background-color: qlineargradient(x1: 0, y1: 0, x2: 0, y2: 1, stop: 0 #002036, stop: 1 #003a56); border-radius: 5px;')
+    sidebar_widget.setStyleSheet('background-color: #242526; border-radius: 5px;')
     sidebar_widget.setLayout(sidebar_vbox)
 
     return sidebar_widget
+
+#242526 <- sidebar
+#1f2021 <- bg mais claro
+#181919 <- bg mais escuro
 
 def set_stylesheet(app: QApplication):
     app.setStyleSheet("""
@@ -190,7 +194,7 @@ def set_stylesheet(app: QApplication):
     }
     
     QMainWindow {
-        background-color: #15161d;
+        background-color: #181919;
     }
     """)
 
