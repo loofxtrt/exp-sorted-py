@@ -182,6 +182,7 @@ def build_sidebar(playlist_file: Path, fallback_thumbnail: str, cache_file: Path
 #242526 <- sidebar
 #1f2021 <- bg mais claro
 #181919 <- bg mais escuro
+# CRÉDITOS LOGO: KORA
 
 def set_stylesheet(app: QApplication):
     app.setStyleSheet("""
