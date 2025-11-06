@@ -145,9 +145,9 @@ def get_playlist_title(playlist_file: Path):
     if playlist_file.exists() and playlist_file.is_file():
         return playlist_file.stem
 
-def is_playlist_valid(playlist_file: Path, playlist_data: dict | None = None, superficial_validation: bool = False):
+def is_playlist_valid(playlist_file: Path, playlist_data: dict | None = None, superficial_validation: bool = False) -> bool:
     """
-    verifica a válida de uma playlist ou seus dados  
+    verifica a validade de uma playlist ou seus dados  
     a verificação de dados é necessária porque o arquivo pode ser um json válido,  
     mas não ter a estrutura esperada de uma playlist
       
@@ -164,14 +164,22 @@ def is_playlist_valid(playlist_file: Path, playlist_data: dict | None = None, su
         opcional. se for verdadeiro, faz a checagem apenas baseada nas informações externas,  
         como a existência, sufixo ou tipo do arquivo. é menos preciso, mas mais rápido por não precisar de i/o
     """
-    
-    if not playlist_file.exists() or not playlist_file.is_file() or not playlist_file.suffix == '.json':
+    logger.info(f'iniciando verificação de:\narquivo: {playlist_file}\ndados: {playlist_data}')
+
+    # múltiplos ifs em vez de um só pra mais clareza e diagnóstico
+    if not playlist_file.exists():
+        logger.warning(f'o arquivo não existe: {playlist_file}')
+        return False
+    elif not playlist_file.is_file():
+        logger.warning(f'o arquivo não representa um arquivo: {playlist_file}')
+        return False
+    elif not playlist_file.suffix == '.json':
+        logger.warning(f'o arquivo não é tem a extensão .json: {playlist_file}')
         return False
 
     # parar logo aqui se for uma verifiação superficial
     if superficial_validation:
-        return
-
+        return True
     
     # se o conteúdo já aberto não tiver sido passado pra função, lê em tempo de execução
     # se não encontrar nada, já é inválido
@@ -179,6 +187,7 @@ def is_playlist_valid(playlist_file: Path, playlist_data: dict | None = None, su
         playlist_data = json_read_playlist(playlist_file)
         
         if not playlist_data:
+            logger.warning(f'não foi possível ler o arquivo a ser validado: {playlist_data}')
             return False
 
     # se um desses campos não estiverem nos dados extraídos, é inválido
@@ -214,14 +223,14 @@ def generate_random_id(id_length: int = 8):
     logger.debug('novo id gerado: ' + final_id)
     return final_id
 
-def json_read_playlist(playlist_file: Path):
+def json_read_playlist(playlist_file: Path) -> dict | None:
     """
     lê e retorna os dados dentro de um arquivo que representa uma playlist
     """
 
-    if not playlist_file.is_file():
-        logger.warning(f'o caminho {playlist_file} não representa um arquivo')
-        return
+    if not is_playlist_valid(playlist_file, superficial_validation=True):
+        logger.warning(f'o caminho {playlist_file} não representa uma playlist válida')
+        return None
 
     try:
         with playlist_file.open('r', encoding='utf-8') as f:
@@ -229,10 +238,10 @@ def json_read_playlist(playlist_file: Path):
 
             # se não achar nenhum dado, o arquivo tá vazio
             if data is None:
-                logger.info(f'o arquivo {playlist_file} está vazio ou não segue a estrutura de uma playlist')
+                logger.info(f'o arquivo {playlist_file} está provavelmente vazio')
     except Exception as err:
-        logger.error(f'erro ao tentar ler a playlist {get_playlist_title(playlist_file)}: {err}')
-        return
+        logger.error(f'erro ao tentar ler a playlist {playlist_file} mesmo que ela aparente ser válida: {err}')
+        return None
 
     return data
 

@@ -8,7 +8,7 @@ from loguru import logger
 def is_entry_present(playlist_data: dict, video_id: str):
     # se existir um dicionário na lista de entries
     # que contenha uma url idêntica a target passada pra função, é true
-    if any(entry['id'] == video_id for entry in playlist_data['entries']):
+    if any(entry.get('id') == video_id for entry in playlist_data['entries']):
         return True
     
     return False
@@ -30,8 +30,15 @@ def create_playlist(
     current_date = helpers.get_iso_datetime()
     playlist_id = helpers.generate_random_id()
 
-    # construir o caminho final do arquivo    
-    final_path = Path(output_dir, playlist_title + '.json')
+    # construir o caminho final do arquivo
+    # garantindo a não-redundância de extensões e a presença da estrutura de diretórios
+    if not playlist_title.lower().endswith('.json'):
+        playlist_title + '.json'
+    else:
+        logger.info('o título pra nova playlist já possui a extensão .json')
+
+    output_dir.mkdir(exist_ok=True, parents=True)
+    final_path = Path(output_dir, playlist_title)
 
     # estruturar os dados
     data = {
@@ -163,21 +170,41 @@ def remove_video(playlist_file: Path, video_id: str):
         logger.info(f'{video_id} não está presente na playlist {playlist_file.stem}')
 
 def move_video(origin_playlist: Path, destination_playlist: Path, video_id: str):
+    # obtém os dados das playlists, mas só a de origem é obrigatória
+    # se a de destino não existir, pode ser criada em tempo de execução
+    origin_data = helpers.json_read_playlist(origin_playlist)
+    dest_data = helpers.json_read_playlist(destination_playlist)
+
+    if not origin_data:
+        logger.warning(f'a playlist de origem não existe')
+        return
+    
+    if not dest_data:
+        answer = helpers.confirm('a playlist de destino ainda não existe, criar ela agora?', default=True)
+        if answer:
+            create_playlist(
+                playlist_title=destination_playlist.name,
+                output_dir=destination_playlist.parent
+            )
+
+            # reler o arquivo atualizado
+            # sem isso, o código quebra por ainda ter os dados inválidos
+            dest_data = helpers.json_read_playlist(destination_playlist)
+        else:
+            return
+
     # obter os títulos só pra logging
     dest_title = helpers.get_playlist_title(destination_playlist)
     origin_title = helpers.get_playlist_title(origin_playlist)
 
     # entra na playlist de origem
     # e pra cada entrada, checa se o id é igual ao do vídeo alvo de movimento
-    origin_data = helpers.json_read_playlist(origin_playlist)
-    dest_data = helpers.json_read_playlist(destination_playlist)
-
     for entry in origin_data.get('entries'):
         # se encontrar o vídeo na playlist de origem, remove ele de lá
         # e adiciona esse mesmo vídeo na playlist de destino
         if entry.get('id') == video_id:
             # se o vídeo que está tentando ser movido já existe na playlist de destino, não continua
-            if is_entry_present(dest_data, video_id):
+            if is_entry_present(playlist_data=dest_data, video_id=video_id):
                 logger.info(f'o mesmo vídeo ({video_id}) já existe na playlist de destino {dest_title}')
                 return
 
