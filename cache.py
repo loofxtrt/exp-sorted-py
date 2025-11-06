@@ -1,9 +1,9 @@
 import json
 import helpers
+import logger
 import settings as stg
 from pathlib import Path
 from yt_dlp import YoutubeDL
-from loguru import logger
 
 def is_video_cached(video_id: str, cache_file: Path) -> bool:
     """

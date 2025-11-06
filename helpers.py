@@ -3,8 +3,8 @@ import string
 import random
 import settings
 import re
+import logger
 from pathlib import Path
-from loguru import logger
 from datetime import datetime
 from datetime import timedelta
 from numerize.numerize import numerize

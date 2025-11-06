@@ -1,9 +1,9 @@
 import settings
 import helpers
 import pathvalidate
+import logger
 from yt_dlp import YoutubeDL
 from pathlib import Path
-from loguru import logger
 
 def is_entry_present(playlist_data: dict, video_id: str):
     # se existir um dicionário na lista de entries

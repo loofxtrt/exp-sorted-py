@@ -2,8 +2,8 @@ import helpers
 import cache
 import requests
 import settings as stg
+import logger
 from pathlib import Path
-from loguru import logger
 from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QLabel, QHBoxLayout, QWidget
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QPixmap

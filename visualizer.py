@@ -1,12 +1,12 @@
 import cache
 import helpers
+import logger
 import settings as stg
 from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
 from rich import box # pra controlar a espessura das bordas das tabelas
 from pathlib import Path
-from loguru import logger
 from datetime import datetime, timedelta
 from textwrap import dedent
 

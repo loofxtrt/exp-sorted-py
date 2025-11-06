@@ -1,9 +1,9 @@
 import manager
 import helpers
 import pathvalidate
+import logger
 from pathlib import Path
 from yt_dlp import YoutubeDL
-from loguru import logger
 
 def extract_youtube_playlist_data(yt_playlist_url: str, ytdl_options: dict) -> dict:
     """
