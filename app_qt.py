@@ -4,7 +4,7 @@ import requests
 import settings as stg
 import logger
 from pathlib import Path
-from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QLabel, QHBoxLayout, QWidget
+from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QLabel, QHBoxLayout, QWidget, QPushButton
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QPixmap
 from colorthief import ColorThief
@@ -140,13 +140,13 @@ def build_sidebar(playlist_file: Path, fallback_thumbnail: str, cache_file: Path
     # se não tiver passado as infos da playlist já abertas, lê elas agora
     if playlist_data is None:
         helpers.json_read_playlist(playlist_file)
-    
+
     # definir a thumbnail da playlist sendo a mesma que a thumbnail do primeiro vídeo da lista
     entries = playlist_data.get('entries')
     first_entry = cache.get_cached_video_info(cache_file=cache_file, video_id=entries[0].get('id'))
     first_thumbnail = first_entry.get('thumbnail')
+    
     playlist_thumbnail = thumbnail_as_pixmap(first_thumbnail, fallback_thumbnail)
-
     playlist_thumbnail = resize_pixmap_16_9(int(1280 / 4), playlist_thumbnail)
 
     thumbnail_label = QLabel()
@@ -169,6 +169,25 @@ def build_sidebar(playlist_file: Path, fallback_thumbnail: str, cache_file: Path
     handle_plural = 'video' if video_count == 1 else 'videos'
     video_count_label = QLabel(f'Contains {video_count} {handle_plural}')
     sidebar_vbox.addWidget(video_count_label)
+
+    # botões
+    buttons_layout = QHBoxLayout()
+
+    add_videos_button = QPushButton('Add videos')
+    buttons_layout.addWidget(add_videos_button)
+
+    add_videos_button.setStyleSheet("""
+    QPushButton {
+        background-color: transparent;
+        padding: 5px 10px;
+        border: 1px solid #43474a;
+        border-radius: 5px;
+    }
+    """) #background-color: #2b2c2e;
+
+    buttons_container = QWidget()
+    buttons_container.setLayout(buttons_layout)    
+    sidebar_vbox.addWidget(buttons_container)
 
     # criar o container
     sidebar_widget = QWidget()

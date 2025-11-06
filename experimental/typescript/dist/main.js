@@ -1,70 +1,59 @@
 const API_ADDRESS = 'http://127.0.0.1:5000';
 const playlistId = 'DtVRqDNU';
-
 async function loadPlaylist(playlistId) {
     // requisitar os dados da playlist pra api
     const response = await fetch(`${API_ADDRESS}/playlist/data/${playlistId}`);
     const data = await response.json();
-    
     // obter separadamente os dados retornados
     const path = data.full_path;
     const title = data.title;
     const entries = data.entries;
     const lastModifiedAt = data.last_modified_at;
     const createdAt = data.created_at;
-    
     // adicionar os ids de cada entrada de vídeo num array
     let videoIds = [];
-    entries.forEach(entry => {
+    entries.forEach((entry) => {
         let id = entry.id;
         videoIds.push(id);
     });
-    
     // atualizar o html com os dados
     updateHtml(title, lastModifiedAt, createdAt, videoIds, path);
 }
-
 async function updateHtml(playlistTitle, lastModifiedAt, createdAt, videoIds, playlistPath) {
     // atualizar o caminho sendo exibido
     const pathElement = document.querySelector('#playlist-path');
-    pathElement.value = playlistPath;
-
-    // atualizar a thumbnail da playlist pra usar a mesma do primeiro vídeo
-    const firstVideo = await fetch(`${API_ADDRESS}/video/${videoIds[0]}`);
-    const firstVideoData = await firstVideo.json().then(data => { // obter os dados e então
-        // extrai a thumbnail dos dados obtidos e atualiza a img
-        const thumbnail = data.thumbnail;
-
-        const playlistThumbnailElement = document.querySelector('#playlist-thumbnail')
-        playlistThumbnailElement.src = thumbnail;
-    });
-
+    if (pathElement) {
+        pathElement.value = playlistPath;
+    }
     // atualizar os valores gerais da playlist
     const titleElement = document.querySelector('#playlist-title');
-    titleElement.textContent = playlistTitle;
-
+    if (titleElement) {
+        titleElement.textContent = playlistTitle;
+    }
     const modifiedElement = document.querySelector('#playlist-last-modified-at');
-    modifiedElement.textContent = lastModifiedAt;
-
+    if (modifiedElement) {
+        modifiedElement.textContent = lastModifiedAt;
+    }
     const createdElement = document.querySelector('#playlist-created-at');
-    createdElement.textContent = createdAt;
-
+    if (createdElement) {
+        createdElement.textContent = createdAt;
+    }
     // criar um elemento de vídeo pra cada id passado pra essa func
     // e adicionar o elemento criado a lista de vídeos visual da playlist
     const videoList = document.querySelector('#video-list');
-    
-    for (id of videoIds) { // não dá pra usar foreach por causa do await
+    if (!videoList) {
+        return;
+    }
+    for (const id of videoIds) { // não dá pra usar foreach por causa do await
         const response = await fetch(`${API_ADDRESS}/video/${id}`);
         const data = await response.json();
-        
         const url = data.url;
         const title = data.title;
         const viewCount = data.view_count;
         const uploadDate = data.upload_date;
         const uploader = data.uploader;
         const thumbnail = data.thumbnail;
-
-        const videoItem = document.createElement('div')
+        const videoItem = document.createElement('div');
         videoItem.classList.add('video-item');
         videoItem.innerHTML = `
         <img src="${thumbnail}" alt="video thumbnail" class="video-thumbnail">
@@ -85,9 +74,10 @@ async function updateHtml(playlistTitle, lastModifiedAt, createdAt, videoIds, pl
             </div>
         </div>
         `;
-
         videoList.appendChild(videoItem);
-    };
+    }
+    ;
 }
-
 loadPlaylist(playlistId);
+export {};
+//# sourceMappingURL=main.js.map

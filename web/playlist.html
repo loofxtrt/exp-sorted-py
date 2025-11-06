@@ -5,9 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Playlist</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://unpkg.com/lucide-static@latest/font/lucide.css">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"/>
 </head>
 <body>
+    <nav>
+        <input type="text" id="playlist-path">
+    </nav>
+
     <main>
         <div id="side-bar">
             <img src="../placeholders/sddefault2.jpg" id="playlist-thumbnail" alt="playlist thumbnail">
@@ -19,20 +24,20 @@
             </div>
 
             <div class="numerical-info light small-icons">
-                <p id="playlist-created-at">
-                    <span class="material-symbols-rounded">calendar_today</span>
-                    Created:
+                <p>
+                    <div class="icon-calendar icon"></div>
+                    Created: <span id="playlist-created-at"></span>
                 </p>
                 
-                <p id="playlist-last-modified-at">
-                    <span class="material-symbols-rounded">update</span>
-                    Modified:
+                <p>
+                    <div class="icon-calendar-clock icon"></div>
+                    Modified: <span id="playlist-last-modified-at"></span>
                 </p>
 
-                <p id="playlist-file-size">
+                <!--<p id="playlist-file-size">
                     <span class="material-symbols-rounded">draft</span>
                     File size:
-                </p>
+                </p>-->
             </div>
 
             <div id="actions">
@@ -40,22 +45,22 @@
                     <input type="text" id="add-videos-input" placeholder="https://www.youtube.com/watch?v=...">
                     
                     <button id="add-videos-button">
-                        <span class="add-videos-icon material-symbols-rounded">add</span>
+                        <div class="icon-plus icon"></div>
                     </button>
                 </div>
 
                 <button id="edit-playlist">
-                    <span class="material-symbols-rounded">edit</span>
+                    <div class="icon-pencil icon"></div>
                     Edit playlist
                 </button>
 
                 <button id="selection-mode">
-                    <span class="material-symbols-rounded">splitscreen</span>
+                    <div class="icon-mouse-pointer-2 icon"></div>
                     Selection mode
                 </button>
 
                 <button id="delete-playlist">
-                    <span class="material-symbols-rounded">delete</span>
+                    <div class="icon-trash icon"></div>
                     Delete playlist
                 </button>
             </div>

@@ -1,8 +1,10 @@
-# python3 api.py + node main.js
+# python3 api.py
+# dps abre o html no navegador
 # http://127.0.0.1:5000
 
 import cache
 import helpers
+import settings as stg
 from flask import Flask, jsonify
 from flask_cors import CORS
 from pathlib import Path
@@ -19,9 +21,13 @@ def get_playlist_file(playlist_id: str):
 
 @app.route('/video/<video_id>', methods=['GET'])
 def get_video(video_id: str):
-    data = cache.get_cached_video_info(video_id)
+    data = cache.get_cached_video_info(
+        video_id=video_id,
+        cache_file=stg.Settings().video_cache_file
+    )
 
     response = {
+        'url': helpers.build_youtube_url(video_id),
         'title': data.get('title'),
         'uploader': data.get('uploader'),
         'view_count': data.get('view_count'),
@@ -39,10 +45,11 @@ def get_playlist_data(playlist_id: str):
     data = helpers.json_read_playlist(file)
 
     response = {
+        'full_path': str(file.resolve()), # inclui o path inteiro
         'title': helpers.get_playlist_title(file), # também incluir o título da playlist na resposta
         'entries': data.get('entries'),
-        'created-at': data.get('created-at'),
-        'last-modified-at': data.get('last-modified-at'),
+        'created_at': data.get('created-at'),
+        'last_modified_at': data.get('last-modified-at'),
         'id': data.get('id')
     }
 
