@@ -24,18 +24,30 @@ class VideoWidget:
         hbox_video_entry.addWidget(widget_thumbnail)
         hbox_video_entry.addWidget(widget_info, alignment=Qt.AlignmentFlag.AlignLeft)
         hbox_video_entry.addStretch() # faz as infos ficarem coladas à esquerda com a thumbnail
-        
+
         # como a entrada de vídeo é um layout e não um widget, ela precisa de um container
         # pra poder ser adicionada em outro layout
         container_video_entry = QWidget()
         container_video_entry.setLayout(hbox_video_entry)
+
+        # habilitar a seleção do item que representa o vídeo
+        container_video_entry.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+        container_video_entry.setAttribute(Qt.WidgetAttribute.WA_Hover)
+        container_video_entry.setProperty('selectable', True) # propriedade custom
+
+        container_video_entry.setStyleSheet("""
+            QWidget[selectable="true"]:focus {
+                border: 1px solid #c6163d;
+                border-radius: 5px;
+            }
+        """)
 
         return container_video_entry
 
     def handle_thumbnail(self, thumbnail_url: str):
         # label e pixmap (imagem) da thumbnail do vídeo
         pixmap_thumbnail = thumbnail_as_pixmap(thumbnail_url, self.fallback_thumbnail)
-        
+
         # redimensionar a thumbnail
         thumb_width = int(1280 / 7)
         pixmap_thumbnail = resize_pixmap_16_9(thumb_width, pixmap_thumbnail)
@@ -45,7 +57,7 @@ class VideoWidget:
         label_thumbnail.setPixmap(pixmap_thumbnail)
 
         return label_thumbnail
-    
+
     def handle_video_info(self, video_data: dict):
         title = video_data.get('title')
         uploader = video_data.get('uploader')
@@ -81,7 +93,7 @@ class VideoWidget:
 
 def resize_pixmap_16_9(width: int, pixmap: QPixmap) -> QPixmap:
     """
-    redimensiona um pixmap mantendo a proporção 16:9 (padrão de thumbnails do youtube)  
+    redimensiona um pixmap mantendo a proporção 16:9 (padrão de thumbnails do youtube)
     se baseia na largura, fazendo a altura se ajustar a ela
     """
     height = int(width * 9 / 16) # mantém a proporção/aspect ratio 16:9
@@ -89,9 +101,9 @@ def resize_pixmap_16_9(width: int, pixmap: QPixmap) -> QPixmap:
 
     return pixmap
 
-def thumbnail_as_pixmap(thumbnail_url: str, fallback_thumbnail: str, skip_download: bool = True) -> QPixmap:
+def thumbnail_as_pixmap(thumbnail_url: str, fallback_thumbnail: str, skip_download: bool = False) -> QPixmap:
     """
-    faz o download na memória da imagem fornecida a essa função  
+    faz o download na memória da imagem fornecida a essa função
     depois, a retorna como um pixmap que pode ser aplicado em labels pra exibir a imagem
     """
     pixmap_thumbnail = None
@@ -112,7 +124,7 @@ def thumbnail_as_pixmap(thumbnail_url: str, fallback_thumbnail: str, skip_downlo
     # usar o fallback se o resto da função não conseguiu sobreescrever o none inicial
     if pixmap_thumbnail is None:
         pixmap_thumbnail = QPixmap(fallback_thumbnail)
-    
+
     return pixmap_thumbnail
 
 def build_nav() -> QWidget:
@@ -142,7 +154,7 @@ def build_playlist_list(playlist_data: dict, cache_file: Path, fallback_thumbnai
 
         video_widget = VideoWidget(video_data, fallback_thumbnail)
         pl_vbox.addWidget(video_widget.build_video_widget())
-    
+
     return pl_widget
 
 def build_sidebar(playlist_file: Path, fallback_thumbnail: str, cache_file: Path, playlist_data: dict | None = None):
@@ -158,7 +170,7 @@ def build_sidebar(playlist_file: Path, fallback_thumbnail: str, cache_file: Path
     entries = playlist_data.get('entries')
     first_entry = cache.get_cached_video_info(cache_file=cache_file, video_id=entries[0].get('id'))
     first_thumbnail = first_entry.get('thumbnail')
-    
+
     playlist_thumbnail = thumbnail_as_pixmap(first_thumbnail, fallback_thumbnail)
     playlist_thumbnail = resize_pixmap_16_9(int(1280 / 4), playlist_thumbnail)
 
@@ -207,7 +219,7 @@ def build_sidebar(playlist_file: Path, fallback_thumbnail: str, cache_file: Path
     """) #background-color: #2b2c2e;
 
     buttons_container = QWidget()
-    buttons_container.setLayout(buttons_layout)    
+    buttons_container.setLayout(buttons_layout)
     sidebar_vbox.addWidget(buttons_container)
 
     # criar o container
@@ -233,7 +245,7 @@ def set_stylesheet(app: QApplication):
     .faint {
         color: #aaaaaa;
     }
-    
+
     QMainWindow {
         background-color: #181919;
     }
@@ -286,7 +298,8 @@ def main(playlist_file: Path, cache_file: Path, fallback_thumbnail: str):
 settings = stg.Settings()
 
 main(
-    playlist_file=Path('./tests/vq.json'),
+    #playlist_file=Path('./tests/vq.json'),
+    playlist_file=Path('/mnt/seagate/authoral-software/sorted/watch-later/creators/eumerly.json'),
     cache_file=settings.video_cache_file,
-    fallback_thumbnail = '/mnt/seagate/workspace/coding/experimental/exp-sorted-py/placeholders/thumbnail.jpg'
+    fallback_thumbnail='/mnt/seagate/workspace/coding/experimental/exp-sorted-py/placeholders/thumbnail.jpg'
 )

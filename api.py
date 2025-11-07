@@ -41,7 +41,8 @@ def get_video(video_id: str):
 
 @app.route('/playlist/data/<playlist_id>', methods=['GET'])
 def get_playlist_data(playlist_id: str):
-    file = get_playlist_file(playlist_id)
+    #file = get_playlist_file(playlist_id)
+    file = Path('/mnt/seagate/authoral-software/sorted/watch-later/creators/eumerly.json')
     data = helpers.json_read_playlist(file)
 
     response = {
@@ -54,6 +55,10 @@ def get_playlist_data(playlist_id: str):
     }
 
     return jsonify(response)
+
+@app.route('/playlist/move/<playlist_id>', methods=['GET'])
+def move_video(origin: Path, destination: Path, video_id: str):
+    pass
 
 if __name__ == '__main__':
     app.run(debug=True)

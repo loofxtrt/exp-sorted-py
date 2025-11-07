@@ -28,7 +28,7 @@
                     <div class="icon-calendar icon"></div>
                     Created: <span id="playlist-created-at"></span>
                 </p>
-                
+
                 <p>
                     <div class="icon-calendar-clock icon"></div>
                     Modified: <span id="playlist-last-modified-at"></span>
@@ -43,7 +43,7 @@
             <div id="actions">
                 <div class="add-videos-container">
                     <input type="text" id="add-videos-input" placeholder="https://www.youtube.com/watch?v=...">
-                    
+
                     <button id="add-videos-button">
                         <div class="icon-plus icon"></div>
                     </button>
@@ -63,11 +63,18 @@
                     <div class="icon-trash icon"></div>
                     Delete playlist
                 </button>
+
+                <button id="move-selected-videos">
+                    <div class="icon-arrow-left-right icon"></div>
+                    <span>Move selected videos</span>
+                    <span> | </span>
+                    <span id="selected-videos-count">0</span>
+                </button>
             </div>
         </div>
 
         <div id="video-list">
-            
+
         </div>
     </main>
 
