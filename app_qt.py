@@ -4,7 +4,7 @@ import requests
 import settings as stg
 import logger
 from pathlib import Path
-from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QLabel, QHBoxLayout, QWidget, QPushButton
+from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QLabel, QHBoxLayout, QWidget, QPushButton, QLineEdit
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QPixmap
 from colorthief import ColorThief
@@ -86,7 +86,7 @@ def resize_pixmap_16_9(width: int, pixmap: QPixmap) -> QPixmap:
     """
     height = int(width * 9 / 16) # mantém a proporção/aspect ratio 16:9
     pixmap = pixmap.scaled(width, height)
-    
+
     return pixmap
 
 def thumbnail_as_pixmap(thumbnail_url: str, fallback_thumbnail: str, skip_download: bool = True) -> QPixmap:
@@ -114,6 +114,19 @@ def thumbnail_as_pixmap(thumbnail_url: str, fallback_thumbnail: str, skip_downlo
         pixmap_thumbnail = QPixmap(fallback_thumbnail)
     
     return pixmap_thumbnail
+
+def build_nav() -> QWidget:
+    path_input = QLineEdit()
+    path_input.placeholderText = 'path/to/playlist/file'
+
+    nav_hbox = QHBoxLayout()
+
+    nav_container = QWidget()
+    nav_container.setLayout(nav_hbox)
+
+    nav_hbox.addWidget(path_input)
+
+    return nav_container
 
 def build_playlist_list(playlist_data: dict, cache_file: Path, fallback_thumbnail: str):
     # vbox que é responsável por ordenar verticalmente todas as entradas de vídeo em um formato de lista
@@ -176,11 +189,19 @@ def build_sidebar(playlist_file: Path, fallback_thumbnail: str, cache_file: Path
     add_videos_button = QPushButton('Add videos')
     buttons_layout.addWidget(add_videos_button)
 
+    # add_videos_button.setStyleSheet("""
+    # QPushButton {
+    #     background-color: transparent;
+    #     padding: 5px 10px;
+    #     border: 1px solid #43474a;
+    #     border-radius: 5px;
+    # }
+    # """) #background-color: #2b2c2e;
     add_videos_button.setStyleSheet("""
     QPushButton {
-        background-color: transparent;
+        background-color: #c6163d;
         padding: 5px 10px;
-        border: 1px solid #43474a;
+        border: none;
         border-radius: 5px;
     }
     """) #background-color: #2b2c2e;
@@ -241,9 +262,15 @@ def main(playlist_file: Path, cache_file: Path, fallback_thumbnail: str):
     main_hbox.addWidget(sidebar_widget)
     main_hbox.addWidget(playlist_widget)
 
+    # nav
+    nav = build_nav()
+    main_vbox = QVBoxLayout()
+    main_vbox.addWidget(nav)
+    main_vbox.addLayout(main_hbox)
+
     # criar um widget central, responsável por ser o parent conteúdo principal
     central_widget = QWidget()
-    central_widget.setLayout(main_hbox)
+    central_widget.setLayout(main_vbox)
 
     # criar, exibir a janela e definir o widget central
     main_window = QMainWindow()
