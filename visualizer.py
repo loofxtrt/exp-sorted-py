@@ -13,20 +13,19 @@ from textwrap import dedent
 # largura de todos os painéis do rich (sejam eles tabelas, paineis comuns etc.)
 STANDARD_PANEL_WIDTH: int = 130
 
-def make_table(title: str = None, width: int = STANDARD_PANEL_WIDTH):
+def make_table(title: str | None = None, width: int = STANDARD_PANEL_WIDTH):
     """
-    cria uma tabela com o rich  
-      
-    poderia ser feito só chamando o Table manualmente,  
-    mas unificando em uma função o estilo das tabelas fica mais consistente  
-      
-    @param title:  
-        título da tabela (opcional)  
-      
-    @param width:  
+    cria uma tabela com o rich
+
+    poderia ser feito só chamando o Table manualmente,
+    mas unificando em uma função o estilo das tabelas fica mais consistente
+
+    @param title:
+        título da tabela (opcional)
+
+    @param width:
         largura da tabela
     """
-
     table = Table(
         box=box.ROUNDED, # remove a espessura grossa
         border_style='dim', # bordas mais fracas
@@ -36,10 +35,10 @@ def make_table(title: str = None, width: int = STANDARD_PANEL_WIDTH):
     # por ex, se width, mesmo vazio, fosse passado logo na criação, o comportamento de tamanho automático se perderia
     if width is not None:
         table.width = width
-    
+
     if title is not None:
         table.title = title
-    
+
     return table
 
 def build_video_row(
@@ -57,20 +56,20 @@ def build_video_row(
 
     @param video_id:
         id do vídeo que deve ter suas informações exibidas
-    
+
     @param include_description:
         se a descrição deve ou não ser incluída na visualização
         caso seja true, pode ficar com informações demais na tabela, por isso é false por padrão
-    
+
     @param truncate_title:
         define se o título vai ou não ser truncado caso seja muito grande
-    
+
     @param truncate_desc:
         define se a descrição vai ou não ser truncada caso seja muito grande
-    
+
     @param title_max:
         quantos caracteres o título pode ter antes de ser truncado
-    
+
     @param desc_max:
         quantos caracteres a descrição pode ter antes de ser truncada
     """
@@ -119,17 +118,17 @@ def view_directory(directory: Path):
     """
     visualiza um diretório que contém múltiplas playlists (cada playlist é um arquivo)
     o que o comando faz é listar todos os arquivos que se encaixam como playlists válidas
-      
+
     isso NÃO visualiza playlists individuais
     """
-    
+
     if not directory.is_dir():
         logger.error('o caminho não é um diretório')
         return
 
     # criação da tabela
     table = make_table()
-    
+
     table.add_column('Title')
     table.add_column('Video count')
     table.add_column('Creation date')
@@ -141,7 +140,7 @@ def view_directory(directory: Path):
         data = helpers.json_read_playlist(f)
         if not helpers.is_playlist_valid(playlist_file=f, playlist_data=data):
             continue
-        
+
         title = helpers.get_playlist_title(playlist_file=f)
         video_count = str(len(data['entries']))
         creation_date = data['created-at']
@@ -216,11 +215,11 @@ def view_playlist(playlist_file: Path, show_description: bool = False):
 
     # selecionar um row
     # baseado no número passado pro input, encontra o dicionário (o vídeo)
-    # naquela posição do array de entradas da playlist 
+    # naquela posição do array de entradas da playlist
     # selection = input(f'selecione um row pelo índice (0-{video_count - 1}) ')
     # try:
     #     selection = int(selection)
-    
+
     #     selected_id = data['entries'][selection]['id']
     #     selection_data = cache.get_cached_video_info(selected_id)
 
