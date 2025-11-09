@@ -5,6 +5,9 @@ import logger
 from yt_dlp import YoutubeDL
 from pathlib import Path
 
+class PlaylistError(Exception): pass
+class VideoError(Exception): pass
+
 def is_entry_present(playlist_data: dict, video_id: str):
     # se existir um dicionário na lista de entries
     # que contenha uma url idêntica a target passada pra função, é true
@@ -169,17 +172,20 @@ def remove_video(playlist_file: Path, video_id: str):
         # se o for inteiro rodar sem nenhum break, o vídeo não foi encontrado
         logger.info(f'{video_id} não está presente na playlist {playlist_file.stem}')
 
-def move_video(origin_playlist: Path, destination_playlist: Path, video_id: str):
+def move_video(origin_playlist: Path, destination_playlist: Path, video_id: str, assume_default: bool = False):
+    """
+    move um vídeo de uma playlist a outra, o removendo da origem e inserindo no destino
+    """
     # obtém os dados das playlists, mas só a de origem é obrigatória
     # se a de destino não existir, pode ser criada em tempo de execução
     origin_data = helpers.json_read_playlist(origin_playlist)
     dest_data = helpers.json_read_playlist(destination_playlist)
 
     if not origin_data:
-        logger.warning(f'a playlist de origem não existe')
+        logger.error(f'a playlist de origem não existe')
         return
     
-    if not dest_data:
+    if not dest_data and not assume_default:
         answer = helpers.confirm('a playlist de destino ainda não existe, criar ela agora?', default=True)
         if answer:
             create_playlist(
