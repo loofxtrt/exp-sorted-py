@@ -171,7 +171,7 @@ def is_playlist_valid(playlist_file: Path, playlist_data: dict | None = None, su
         logger.warning(f'o arquivo não existe: {playlist_file}')
         return False
     elif not playlist_file.is_file():
-        logger.warning(f'o arquivo não representa um arquivo: {playlist_file}')
+        logger.warning(f'o caminho não representa um arquivo: {playlist_file}')
         return False
     elif not playlist_file.suffix == '.json':
         logger.warning(f'o arquivo não é tem a extensão .json: {playlist_file}')

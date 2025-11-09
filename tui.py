@@ -4,7 +4,7 @@ import manager
 import settings as stg
 from pathlib import Path
 from textual.app import App, ComposeResult
-from textual.widgets import DataTable, Header, Input, Label, Footer
+from textual.widgets import DataTable, Header, Input, Label, Footer, DirectoryTree
 from textual.containers import Horizontal, Vertical
 from rich.text import Text
 
@@ -29,7 +29,39 @@ def insert_video_row(video_data: dict, video_id: str, table: DataTable):
     # a key é a key_row, usada pra identificar esse row, nesse caso, o id do vídeo
     table.add_row(' ', title, uploader, duration, view_count, upload_date, key=video_id)
 
-PLAYLIST = Path('./tests/serieshim.json')
+def build_input(label_contents: str, placeholder_contents: str | None = None):
+        """
+        wrapper que retorna um container que contém um label + um input  
+        o input field é retornado separadamente para que ele pode ser definido como variável global da classe
+          
+        o uso dessa função deve ser:  
+        nome_container, self.nome_input = build_input(...)  
+          
+        dessa forma, pode ser aplicado como:  
+        yield nome_container  
+          
+        e o nome_input agora é uma variável global acessível com self.nome_input
+        """
+        # adicionar dois pontos no final do label
+        if not label_contents.strip().endswith(':'):
+            label_contents += ':'
+
+        # criar o label
+        input_label = Label(label_contents).add_class('input-label')
+        input_field = Input()
+        
+        # adicionar o placeholder no input caso tenha sido passado pra função
+        if placeholder_contents:
+            input_field.placeholder = placeholder_contents
+
+        # adicionar os widgets finais ao container horizontal
+        # isso é o equivalente de with Horziontal(): yield Widget()
+        # mas em vez de só criar os widgets dentro, insere eles com _add_child()
+        container = Horizontal().add_class('input-container')
+        container._add_child(input_label)
+        container._add_child(input_field)
+
+        return container, input_field
 
 class PlaylistView(App):
     #ffc971 amarelo
@@ -40,7 +72,6 @@ class PlaylistView(App):
     # blue, red, yellow mocha -> https://catppuccin.com/palette/
 
     # essas constantes já são aplicadas automaticamente pelo textual
-    TITLE = helpers.get_playlist_title(PLAYLIST)
     BINDINGS = [
         ('^q', 'quit', 'Quit'),
         ('m', 'move', 'Move selected'),
@@ -49,6 +80,12 @@ class PlaylistView(App):
     CSS = """
     Screen {
         background: #181825;
+    }
+
+    DirectoryTree {
+        background: transparent;
+        /*width: 40;*/
+        width: 20%;
     }
 
     DataTable {
@@ -132,40 +169,18 @@ class PlaylistView(App):
         height: 1; /* faz os inputs não ficarem afastados quando um em cima do outro */
     }
     """
+    def __init__(self, playlist_file: Path, video_cache_file: Path, master_directory: Path, **kwargs):
+        super().__init__(**kwargs) # herdar o comportamento da classe padrão
 
-    def build_input(self, label_contents: str, placeholder_contents: str | None = None):
-        """
-        wrapper que retorna um container que contém um label + um input  
-        o input field é retornado separadamente para que ele pode ser definido como variável global da classe
-          
-        o uso dessa função deve ser:  
-        nome_container, self.nome_input = build_input(...)  
-          
-        dessa forma, pode ser aplicado como:  
-        yield nome_container  
-          
-        e o nome_input agora é uma variável global acessível com self.nome_input
-        """
-        # adicionar dois pontos no final do label
-        if not label_contents.strip().endswith(':'):
-            label_contents += ':'
+        self.video_cache_file = video_cache_file
+        self.playlist_file = playlist_file
+        self.master_directory = master_directory
+        self.selected_row_keys = []
 
-        # criar o label
-        input_label = Label(label_contents).add_class('input-label')
-        input_field = Input()
-        
-        # adicionar o placeholder no input caso tenha sido passado pra função
-        if placeholder_contents:
-            input_field.placeholder = placeholder_contents
-
-        # adicionar os widgets finais ao container horizontal
-        # isso é o equivalente de with Horziontal(): yield Widget()
-        # mas em vez de só criar os widgets dentro, insere eles com _add_child()
-        container = Horizontal().add_class('input-container')
-        container._add_child(input_label)
-        container._add_child(input_field)
-
-        return container, input_field
+        # definir o título que aparece no header pra ser o arquivo da playlist
+        # relativo ao master directory (no caso, relativo ao pai dele pra ele poder aparecer)
+        # ex: master/creators/playlist-atual.json
+        self.title = str(self.playlist_file.relative_to(master_directory.parent))
 
     def compose(self) -> ComposeResult:
         # cria e adiciona os widgets iniciais ao app
@@ -173,32 +188,35 @@ class PlaylistView(App):
         self.header.icon = ''
         yield self.header
 
-        with Vertical(): # conteúdo principal
-            self.status_label = Label() # status, erros, avisos etc.
-            yield self.status_label
+        with Horizontal():
+            # abrir a file tree no diretório principal
+            self.file_tree = DirectoryTree(str(self.master_directory))
+            self.file_tree.ICON_FILE = ''
+            yield self.file_tree
 
-            with Vertical(): # inputs
-                # # url de um novo vídeo a ser adicionado a playlist
-                # insert_container, self.video_input = self.build_input(
-                #     label_contents='Insert video',
-                #     placeholder_contents='https://www.youtube.com/watch?v=erb4n8PW2qw'
-                # )
-                # yield insert_container
+            # conteúdo principal
+            with Vertical():
+                self.status_label = Label() # status, erros, avisos etc.
+                yield self.status_label
 
-                # destino pra onde os vídeos devem ir ao clicar em 'move'
-                destination_container, self.destination_input = self.build_input(
-                    label_contents='Moving destination',
-                    placeholder_contents='~/playlists/destination.json'
-                )
-                yield destination_container
+                with Vertical(): # inputs
+                    # # url de um novo vídeo a ser adicionado a playlist
+                    # insert_container, self.video_input = build_input(
+                    #     label_contents='Insert video',
+                    #     placeholder_contents='https://www.youtube.com/watch?v=erb4n8PW2qw'
+                    # )
+                    # yield insert_container
 
-                # self.search_entry = Input()
-                # self.search_entry.placeholder = 'Search a video inside this playlist...'
-                # yield self.search_entry
-            
-            self.table = DataTable(cursor_type='row')
-            self.table.focus() # foca na tabela quando entra na tela, e não nos inputs
-            yield self.table
+                    # destino pra onde os vídeos devem ir ao clicar em 'move'
+                    destination_container, self.destination_input = build_input(
+                        label_contents='Moving destination',
+                        placeholder_contents='~/playlists/destination.json'
+                    )
+                    yield destination_container
+                
+                self.table = DataTable(cursor_type='row')
+                self.table.focus() # foca na tabela quando entra na tela, e não nos inputs
+                yield self.table
 
         self.footer = Footer()
         self.footer.show_command_palette = False
@@ -224,11 +242,11 @@ class PlaylistView(App):
         )
 
         # adicionar os vídeos, lendo a playlist e obtendo os dados pelo cache
-        data = helpers.json_read_playlist(PLAYLIST)
+        data = helpers.json_read_playlist(self.playlist_file)
 
         for e in data.get('entries'):
             video_id = e.get('id')
-            info = cache.get_cached_video_info(video_id=video_id, cache_file=SETTINGS.video_cache_file)
+            info = cache.get_cached_video_info(video_id=video_id, cache_file=self.video_cache_file)
 
             insert_video_row(
                 video_data=info,
@@ -255,11 +273,11 @@ class PlaylistView(App):
                 value=value
             )
 
-        if row_key in SELECTED_ROW_KEYS:
-            SELECTED_ROW_KEYS.remove(row_key)
+        if row_key in self.selected_row_keys:
+            self.selected_row_keys.remove(row_key)
             toggle_selection(False)
         else:
-            SELECTED_ROW_KEYS.append(row_key)
+            self.selected_row_keys.append(row_key)
             toggle_selection(True)
     
     def on_key(self, event):
@@ -286,7 +304,7 @@ class PlaylistView(App):
                 return
 
             # se a quantidade de vídeos selecionados seja válida, maior que 0
-            if not len(SELECTED_ROW_KEYS) > 0:
+            if not len(self.selected_row_keys) > 0:
                 self.destination_input.add_class('input-warning')
                 
                 self.status_label.add_class('text-warning')
@@ -294,35 +312,49 @@ class PlaylistView(App):
                 return
 
             # mover cada vídeo pra playlist de destino
-            for row_key in SELECTED_ROW_KEYS:
+            for row_key in self.selected_row_keys:
+                self.selected_row_keys.remove(row_key) # remove da lista de selecionados
                 self.table.remove_row(row_key) # remove da tabela visual
                 video_id = row_key.value # o id tá dentro da row_key, ele não é a row_key em si
 
                 # moção real do vídeo
                 manager.move_video(
-                    origin_playlist=PLAYLIST,
+                    origin_playlist=self.playlist_file,
                     destination_playlist=destination,
                     video_id=video_id
                     )
         
         if event.key == 'd':
-            for row_key in SELECTED_ROW_KEYS:
+            for row_key in self.selected_row_keys:
                 # remover da tabela e obter o id do vídeo
+                self.selected_row_keys.remove(row_key)
                 self.table.remove_row(row_key)
                 video_id = row_key.value
 
                 # obter o título pra mandar no status
-                video_data = cache.get_cached_video_info(video_id=video_id, cache_file=SETTINGS.video_cache_file)
+                video_data = cache.get_cached_video_info(video_id=video_id, cache_file=self.video_cache_file)
                 video_title = video_data.get('title', None)
                 self.status_label.update(f'Removed {video_title}')
                 self.status_label.add_class('text-success')
 
                 # remoção real do vídeo
                 manager.remove_video(
-                    playlist_file=PLAYLIST,
+                    playlist_file=self.playlist_file,
                     video_id=video_id
                 )
 
-SETTINGS = stg.Settings()
-SELECTED_ROW_KEYS = []
-PlaylistView().run()
+def main(playlist_file: Path, master_directory: Path):
+    if not helpers.is_playlist_valid(playlist_file):
+        return
+
+    if not master_directory.is_dir():
+        return
+
+    SETTINGS = stg.Settings()
+
+    app = PlaylistView(
+        playlist_file=playlist_file,
+        master_directory=master_directory,
+        video_cache_file=SETTINGS.video_cache_file
+    )
+    app.run()

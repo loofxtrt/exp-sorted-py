@@ -4,6 +4,7 @@ import visualizer
 import helpers
 import cache
 import importation
+import tui
 import settings as stg
 from pathlib import Path
 
@@ -115,6 +116,14 @@ def update_cache(playlists_directory, include_all):
 def reset_settings():
     settings.reset_or_set()
 
+@click.command(help='Inicia a TUI para visualizar e editar uma playlist')
+@click.argument('playlist')
+def tui_pl(playlist):
+    tui.main(
+        master_directory=Path('/mnt/seagate/authoral-software/sorted'),
+        playlist_file=Path(playlist)
+    )
+
 @click.group()
 def cli():
     pass
@@ -129,6 +138,7 @@ cli.add_command(view_pl)
 cli.add_command(move)
 cli.add_command(update_cache)
 cli.add_command(reset_settings)
+cli.add_command(tui_pl)
 
 if __name__ == '__main__':
     settings.load()
