@@ -75,7 +75,7 @@ class PlaylistView(App):
     #496fc0 azul
     #52c58d verde
 
-    # blue, red, yellow, green mocha -> https://catppuccin.com/palette/
+    # blue, red, yellow, green, mauve mocha -> https://catppuccin.com/palette/
 
     # essas constantes já são aplicadas automaticamente pelo textual
     BINDINGS = [
@@ -83,6 +83,7 @@ class PlaylistView(App):
         ('m', 'move', 'Move selected'),
         ('d', 'delete', 'Delete selected'),
         ('s', 'set', 'Current as destination'),
+        ('p', 'pick', 'Toggle picking'),
         ('i', 'insert', 'Insert video'),
         ('u', 'url', 'Copy selected URL'),
         ('c', 'clear', 'Clear inputs')
@@ -94,8 +95,15 @@ class PlaylistView(App):
 
     DirectoryTree {
         background: transparent;
-        /*width: 40;*/
         width: 20%;
+    }
+
+    DirectoryTree * {
+        text-style: none;
+    }
+
+    .directory-tree--extension {
+        color: dimgrey;
     }
 
     DataTable {
@@ -114,15 +122,22 @@ class PlaylistView(App):
         text-style: none;
     }
 
+    Header {
+        margin-bottom: 1;
+    }
+
     Header, Footer {
         background: #89b4fa 10%;
         color: #89b4fa;
     }
 
+    .footer-key--key {
+        color: #cba6f7;
+    }
+
     Input {
-        background: #89b4fa 10%;
+        background: transparent;
         border: none;
-        /*padding: 0 1;*/
         padding: 0;
         height: 1; /* altura mínima */
     }
@@ -178,39 +193,67 @@ class PlaylistView(App):
     }
 
     .input-label {
-        /*background: #89b4fa;
-        color: #181825;*/
+        background: transparent;
 
-        background: #89b4fa 10%;
-        color: #89b4fa;
-        /*color: white;*/
-
-        /*text-align: center;*/
+        color: white;
         text-style: bold;
 
         padding: 0 1;
-        /*width: 24;*/
     }
 
     .input-container {
-        /*margin-bottom: 1;*/
-        height: 1; /* faz os inputs não ficarem afastados quando um em cima do outro */
+        border: round #89b4fa 30%;
+        height: auto; /* faz os containers não se expandirem desnecessariamente */
+    }
+
+    Header.picking-mode-indicator {
+        background: #cba6f7;
+        
+        color: #181825;
+        text-style: bold;
     }
     """
 
     def __init__(self, playlist_file: Path, video_cache_file: Path, ytdl_options: dict, master_directory: Path, **kwargs):
+        """
+        @param playlist_file:  
+            primeira playlist a ser carregada  
+            quando mudanças ocorrem, como carregar outra playlist, a variável self.playlist_file deve ser atualizada  
+            ela é o método de obter qual é playlist atualmente sendo vista  
+          
+        @param video_cache_file:  
+            arquivo contendo o cache dos vídeos  
+          
+        @param ytdl_options:  
+            opções pra api do ytdl  
+          
+        @param master_directory:  
+            diretório que vai ser exibido como raíz da file tree  
+            não afeta diretamente o funcionamento da visualização da playlist
+        """
+
         super().__init__(**kwargs) # herdar o comportamento da classe padrão
 
-        self.video_cache_file = video_cache_file
         self.playlist_file = playlist_file
+        self.video_cache_file = video_cache_file
         self.master_directory = master_directory
-        self.selected_row_keys = []
         self.ytdl_options = ytdl_options
 
-        # definir o título que aparece no header pra ser o arquivo da playlist
+        self.selected_row_keys = [] # lista de rows selecionados da tabela
+        self.picking_state = False # indica se o usuário está ou não em estado de seleção de um destino
+
+    def set_title(self):
+        """
+        define o título que aparece no header, geralmente contendo o caminho da playlist atual
+        """
+
         # relativo ao master directory (no caso, relativo ao pai dele pra ele poder aparecer)
         # ex: master/creators/playlist-atual.json
-        # self.title = str(self.playlist_file.relative_to(master_directory.parent))
+        try:
+            self.title = str(self.playlist_file.relative_to(self.master_directory.parent))
+        except ValueError:
+            # fallback caso a playlist não esteja em nenhum lugar do master directory
+            self.title = self.playlist_file
 
     def get_video_title(self, video_id) -> str | None:
         # obtém o título do vídeo
@@ -256,8 +299,9 @@ class PlaylistView(App):
 
     def compose(self) -> ComposeResult:
         # cria e adiciona os widgets iniciais ao app
+        
         self.header = Header()
-        self.header.icon = ''
+        self.header.icon = '🪽'
         yield self.header
 
         with Horizontal():
@@ -332,10 +376,19 @@ class PlaylistView(App):
 
         selected_file = event.path
 
-        if helpers.is_playlist_valid(selected_file):
-            self.playlist_file = selected_file
-            self.selected_row_keys = []
-            self.load_playlist_table(table=self.table, playlist_file=selected_file)
+        if not helpers.is_playlist_valid(selected_file):
+            self.notify(message='Not a valid playlist', severity='warning')
+            return
+
+        # tomar a seleção como moving destination caso o estado de picking esteja ativo
+        if self.picking_state:
+            self.destination_input.value = str(selected_file)
+            return
+
+        # selecionar normalmente caso nenhum estado especial esteja ativo
+        self.playlist_file = selected_file
+        self.selected_row_keys = []
+        self.load_playlist_table(table=self.table, playlist_file=selected_file)
 
     def on_key(self, event):
         # limpar os quaisquer erros/avisos/sucessos visuais ao clicar em qualquer tecla
@@ -399,7 +452,10 @@ class PlaylistView(App):
                     self.notify(message=f'Could not find {title} ({video_id}) in the origin playlist', severity='error')
 
             if moved_count > 0:
-                self.notify(message=f'Sucessfully moved {moved_count} videos')
+                # usar plural se for mais de um vídeo e singular se for só um
+                handle_plural = 'video' if moved_count == 1 else 'videos'
+
+                self.notify(message=f'Sucessfully moved {moved_count} {handle_plural}')
 
         if event.key == 'd':
             """
@@ -541,6 +597,21 @@ class PlaylistView(App):
                 self.notify(message=f'URL copied {video_url}', severity='information')
             except Exception as err:
                 self.notify(message=f'Something went wrong while copying the URL: {err}', severity='error')
+        
+        if event.key == 'p':
+            """
+            toggle do estado de picking  
+            não possui lógica interna porque a file tree é a responsável por isso
+            """
+
+            self.picking_state = not self.picking_state
+
+            if self.picking_state:
+                self.title = 'Picking mode activated'
+                self.header.add_class('picking-mode-indicator') # tem alterações no css especificas pra essa classe
+            else:
+                self.set_title() # reseta o título pro normal
+                self.header.remove_class('picking-mode-indicator')
 
 def main(playlist_file: Path, master_directory: Path):
     if not helpers.is_playlist_valid(playlist_file):

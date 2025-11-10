@@ -92,13 +92,13 @@ def view_pl(playlist, show_desc):
 @click.argument('origin-playlist')
 @click.argument('destination-playlist')
 @click.argument('url')
-@click.option('--assume-default', '-y', is_flag=True, help='Assumir que se a playlist de destino não existir, ela deve ser criada')
-def move(origin_playlist, destination_playlist, url, assume_default):
+@click.option('--ensure-destination', '-e', is_flag=True, help='Assumir que se a playlist de destino não existir, ela deve ser criada')
+def move(origin_playlist, destination_playlist, url, ensure_destination):
     manager.move_video(
         origin_playlist=Path(origin_playlist),
         destination_playlist=Path(destination_playlist),
         video_id=helpers.extract_youtube_video_id(url=url, ytdl_options=settings.ytdl_options),
-        assume_default=assume_default
+        ensure_destination=ensure_destination
     )
 
 @click.command(help='Atualiza o cache de vídeos do software, removendo os vídeos órfãos e incluindo os novos')
