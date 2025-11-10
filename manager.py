@@ -5,8 +5,9 @@ import logger
 from yt_dlp import YoutubeDL
 from pathlib import Path
 
-class PlaylistError(Exception): pass
-class VideoError(Exception): pass
+class InvalidPlaylist(Exception): pass
+class EntryAlreadyExists(Exception): pass
+class EntryNotFound(Exception): pass
 
 def is_entry_present(playlist_data: dict, video_id: str):
     # se existir um dicionário na lista de entries
@@ -36,7 +37,7 @@ def create_playlist(
     # construir o caminho final do arquivo
     # garantindo a não-redundância de extensões e a presença da estrutura de diretórios
     if not playlist_title.lower().endswith('.json'):
-        playlist_title + '.json'
+        playlist_title += '.json'
     else:
         logger.info('o título pra nova playlist já possui a extensão .json')
 
@@ -103,7 +104,7 @@ def delete_playlist(
     playlist_file.unlink()
     logger.success('playlist deletada')
 
-def insert_video(playlist_file: Path, video_id: str, assume_default = False):
+def insert_video(playlist_file: Path, video_id: str, ensure_playlist: bool = True):
     # outra função pode acidentalmente passar um id nulo se a extração der errado
     if not video_id:
         logger.warning(f'vídeo não adicionado à playlist. o id é inválido: {video_id}')
@@ -112,29 +113,23 @@ def insert_video(playlist_file: Path, video_id: str, assume_default = False):
     # criar a playlist primeiro caso ela ainda não exista
     # se assume que o output dir e o título serão os mesmos do arquivo não-existente passado pra função
     if not playlist_file.exists():
-        answer = helpers.confirm(
-            prompt='essa playlist ainda não existe, criar ela agora?',
-            assume_default=assume_default,
-            default=True
-        )
-        if not answer:
-            return
-
-        # também garante que a estrutura de diretórios inteira passada exista
-        playlist_file.parent.mkdir(exist_ok=True, parents=True)
-        create_playlist(playlist_title=playlist_file.stem, output_dir=playlist_file.parent)
+        if ensure_playlist:
+            # também garante que a estrutura de diretórios inteira passada exista
+            playlist_file.parent.mkdir(exist_ok=True, parents=True)
+            create_playlist(playlist_title=playlist_file.stem, output_dir=playlist_file.parent)
+        else:
+            raise InvalidPlaylist(f'Could not insert video on playlist {playlist_file}')
 
     # ler os dados atuais da playlist
     data = helpers.json_read_playlist(playlist_file)
     
     if not helpers.is_playlist_valid(playlist_file=playlist_file, playlist_data=data):
-        return
+        raise InvalidPlaylist(f'Playlist {playlist_file} exists but it is invalid')
 
     # verificação pra evitar duplicação acidental de vídeos
-    existing = is_entry_present(data, video_id)
-    if existing:
+    if is_entry_present(data, video_id):
         logger.info('o vídeo já está presente na playlist')
-        return
+        raise EntryAlreadyExists('Insertion skipped, video already exists')
 
     # obter a data em que o vídeo foi inserido
     # é útil pra opções de ordenação por data de inserção
@@ -166,13 +161,12 @@ def remove_video(playlist_file: Path, video_id: str):
             helpers.json_write_playlist(playlist_file, data)
 
             logger.success(f'{video_id} removido da playlist {playlist_file.stem}')
-        
             return
     else:
         # se o for inteiro rodar sem nenhum break, o vídeo não foi encontrado
         logger.info(f'{video_id} não está presente na playlist {playlist_file.stem}')
 
-def move_video(origin_playlist: Path, destination_playlist: Path, video_id: str, assume_default: bool = False):
+def move_video(origin_playlist: Path, destination_playlist: Path, video_id: str, ensure_destination: bool = False):
     """
     move um vídeo de uma playlist a outra, o removendo da origem e inserindo no destino
     """
@@ -182,22 +176,22 @@ def move_video(origin_playlist: Path, destination_playlist: Path, video_id: str,
     dest_data = helpers.json_read_playlist(destination_playlist)
 
     if not origin_data:
-        logger.error(f'a playlist de origem não existe')
-        return
+        logger.error(f'a playlist de origem não é válida')
+        raise InvalidPlaylist(f'Origin {origin_playlist} is not a valid playlist')
     
-    if not dest_data and not assume_default:
-        answer = helpers.confirm('a playlist de destino ainda não existe, criar ela agora?', default=True)
-        if answer:
-            create_playlist(
-                playlist_title=destination_playlist.name,
-                output_dir=destination_playlist.parent
-            )
+    if not dest_data:
+        if ensure_destination:
+            logger.info('criando a playlist de destino')
+
+            dest_parent = destination_playlist.parent
+            dest_parent.mkdir(parents=True, exist_ok=True)
+            title = helpers.get_playlist_title(destination_playlist)
+            create_playlist(playlist_title=title, output_dir=dest_parent)
 
             # reler o arquivo atualizado
-            # sem isso, o código quebra por ainda ter os dados inválidos
             dest_data = helpers.json_read_playlist(destination_playlist)
         else:
-            return
+            raise InvalidPlaylist(f'Destination {destination_playlist} is not a valid playlist')
 
     # obter os títulos só pra logging
     dest_title = helpers.get_playlist_title(destination_playlist)
@@ -205,22 +199,21 @@ def move_video(origin_playlist: Path, destination_playlist: Path, video_id: str,
 
     # entra na playlist de origem
     # e pra cada entrada, checa se o id é igual ao do vídeo alvo de movimento
-    for entry in origin_data.get('entries'):
+    for entry in origin_data.get('entries', []):
         # se encontrar o vídeo na playlist de origem, remove ele de lá
         # e adiciona esse mesmo vídeo na playlist de destino
         if entry.get('id') == video_id:
             # se o vídeo que está tentando ser movido já existe na playlist de destino, não continua
             if is_entry_present(playlist_data=dest_data, video_id=video_id):
                 logger.info(f'o mesmo vídeo ({video_id}) já existe na playlist de destino {dest_title}')
-                return
+                raise EntryAlreadyExists(f'{video_id} already exists in {destination_playlist}')
 
             remove_video(origin_playlist, video_id)
             insert_video(destination_playlist, video_id)
 
             logger.success(f'vídeo movido de {origin_title} para {dest_title}')
-        
             return
     else:
         # se não encontrar o vídeo na playlist de origem
         logger.info(f'o vídeo ({video_id}) não existe na playlist de origem {origin_title}')
-        return
+        raise EntryNotFound(f'{video_id} not found in {origin_playlist}')
