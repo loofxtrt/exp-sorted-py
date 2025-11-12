@@ -88,131 +88,7 @@ class PlaylistView(App):
         ('u', 'url', 'Copy selected URL'),
         ('c', 'clear', 'Clear inputs')
     ]
-    CSS = """
-    Screen {
-        background: #181825;
-    }
-
-    DirectoryTree {
-        background: transparent;
-        width: 20%;
-    }
-
-    DirectoryTree * {
-        text-style: none;
-    }
-
-    .directory-tree--extension {
-        color: dimgrey;
-    }
-
-    DataTable {
-        border: round #89b4fa 30%;
-        height: 1fr;
-    }
-
-    DataTable, DataTable * {
-        background: transparent;
-    }
-
-    DataTable > .datatable--cursor {
-        /* rows selecionados */
-        background: #89b4fa 10%;
-        color: #89b4fa;
-        text-style: none;
-    }
-
-    Header {
-        margin-bottom: 1;
-    }
-
-    Header, Footer {
-        background: #89b4fa 10%;
-        color: #89b4fa;
-    }
-
-    .footer-key--key {
-        color: #cba6f7;
-    }
-
-    Input {
-        background: transparent;
-        border: none;
-        padding: 0;
-        height: 1; /* altura mínima */
-    }
-
-    Input:focus {
-        background: #89b4fa 30%;
-    }
-
-    Toast {
-        padding: 0;
-    }
-
-    Toast.-warning {
-        border-left: outer #f9e2af;
-        background: #f9e2af 10%
-    }
-
-    Toast.-error {
-        border-left: outer #f38ba8; /* borda parecida com a padrão */
-        background: #f38ba8 10%
-    }
-    Toast.-information {
-        border-left: outer #a6e3a1;
-        background: #a6e3a1 10%;
-    }
-
-    .input-warning {
-        background: #f9e2af 10%;
-    }
-
-    .input-warning:focus {
-        background: #f9e2af 30%;
-    }
-
-    .input-error {
-        background: #f38ba8 10%;
-    }
-
-    .input-error:focus {
-        background: #f38ba8 30%;
-    }
-
-    .text-warning {
-        color: #f9e2af;
-    }
-
-    .text-error {
-        color: #f38ba8;
-    }
-
-    .text-success {
-        color: #a6e3a1;
-    }
-
-    .input-label {
-        background: transparent;
-
-        color: white;
-        text-style: bold;
-
-        padding: 0 1;
-    }
-
-    .input-container {
-        border: round #89b4fa 30%;
-        height: auto; /* faz os containers não se expandirem desnecessariamente */
-    }
-
-    Header.picking-mode-indicator {
-        background: #cba6f7;
-        
-        color: #181825;
-        text-style: bold;
-    }
-    """
+    CSS_PATH = "style.tcss"
 
     def __init__(self, playlist_file: Path, video_cache_file: Path, ytdl_options: dict, master_directory: Path, **kwargs):
         """
@@ -301,7 +177,7 @@ class PlaylistView(App):
         # cria e adiciona os widgets iniciais ao app
         
         self.header = Header()
-        self.header.icon = '🪽'
+        self.header.icon = ''
         yield self.header
 
         with Horizontal():
@@ -493,6 +369,10 @@ class PlaylistView(App):
             """
 
             video_url = self.video_input.value
+            if video_url.strip() == '':
+                self.notify(message='No video URL provided', severity='warning')
+                return
+
             video_id = helpers.extract_youtube_video_id(video_url, self.ytdl_options)
             if not video_id:
                 self.notify(message=f'Could not extract video ID from {video_url}', severity='error')

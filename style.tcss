@@ -1,0 +1,134 @@
+$accent-primary: #ae7cffff;
+$accent-secondary: #75f1c6ff;
+
+$white: white;
+$black: #0d0d0dff;
+$grey: #1d1d1dff;
+
+$green: #a6e3a1;
+$yellow: #f9e2af;
+$red: #f38ba8;
+
+Screen {
+    background: $black;
+}
+
+DirectoryTree {
+    background: transparent;
+    width: 20%;
+}
+
+DirectoryTree * {
+    text-style: none;
+}
+
+.directory-tree--extension {
+    color: dimgrey;
+}
+
+DataTable {
+    border: round $accent-primary 30%;
+    height: 1fr;
+}
+
+DataTable, DataTable * {
+    background: transparent;
+}
+
+DataTable > .datatable--cursor {
+    /* rows selecionados */
+    background: $accent-primary 10%;
+    color: $accent-primary;
+    text-style: none;
+}
+
+Header {
+    margin-bottom: 1;
+}
+
+Header, Footer {
+    background: $grey;
+    color: $white;
+}
+
+.footer-key--key {
+    color: $accent-secondary;
+}
+
+Input {
+    background: transparent;
+    border: none;
+    padding: 0;
+    height: 1; /* altura mínima */
+}
+
+Input:focus {
+    background: $accent-primary 30%;
+}
+
+Toast {
+    padding: 0;
+}
+
+Toast.-warning {
+    border-left: outer $yellow;
+    background: $yellow 10%
+}
+
+Toast.-error {
+    border-left: outer $red; /* borda parecida com a padrão */
+    background: $red 10%
+}
+Toast.-information {
+    border-left: outer $green;
+    background: $green 10%;
+}
+
+.input-warning {
+    background: $yellow 10%;
+}
+
+.input-warning:focus {
+    background: $yellow 30%;
+}
+
+.input-error {
+    background: $red 10%;
+}
+
+.input-error:focus {
+    background: $red 30%;
+}
+
+.text-warning {
+    color: $yellow;
+}
+
+.text-error {
+    color: $red;
+}
+
+.text-success {
+    color: $green;
+}
+
+.input-label {
+    background: transparent;
+
+    color: $white;
+    text-style: bold;
+
+    padding: 0 1;
+}
+
+.input-container {
+    border: round $accent-primary 30%;
+    height: auto; /* faz os containers não se expandirem desnecessariamente */
+}
+
+Header.picking-mode-indicator {
+    background: $accent-secondary;
+    
+    color: $black;
+    text-style: bold;
+}
