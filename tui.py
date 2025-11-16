@@ -75,8 +75,6 @@ class PlaylistView(App):
     #496fc0 azul
     #52c58d verde
 
-    # blue, red, yellow, green, mauve mocha -> https://catppuccin.com/palette/
-
     # essas constantes já são aplicadas automaticamente pelo textual
     BINDINGS = [
         ('^q', 'quit', 'Quit'),
@@ -184,6 +182,8 @@ class PlaylistView(App):
             # abrir a file tree no diretório principal
             self.file_tree = DirectoryTree(str(self.master_directory))
             self.file_tree.ICON_FILE = ''
+            self.file_tree.ICON_NODE = '󰉋 ' #󰉖 nf-md-x
+            self.file_tree.ICON_NODE_EXPANDED = '󰝰 ' #󰷏
             yield self.file_tree
 
             # conteúdo principal
@@ -398,6 +398,7 @@ class PlaylistView(App):
                     ensure_playlist=True
                 )
 
+
                 insert_video_row(
                     video_data=video_data,
                     video_id=video_id,
@@ -409,7 +410,7 @@ class PlaylistView(App):
                 self.notify(message=f'Something is wrong with the destination playlist: {err}', severity='error')
             except manager.EntryAlreadyExists:
                 self.notify(message=f'{title} ({video_id}) already exists in the destination playlist', severity='information')
-        
+
         if event.key == 'c':
             """
             limpa os principais campos de input
