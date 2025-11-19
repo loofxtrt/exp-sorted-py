@@ -1,7 +1,7 @@
 import cache
 import helpers
 import logger
-import settings as stg
+import settings
 from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
@@ -73,8 +73,7 @@ def build_video_row(
     @param desc_max:
         quantos caracteres a descrição pode ter antes de ser truncada
     """
-    settings = stg.Settings()
-    data = cache.get_cached_video_info(video_id, cache_file=settings.video_cache_file)
+    data = cache.get_cached_video_info(video_id, cache_file=settings.get_cache_file('youtube', 'videos'))
 
     if not data:
         return

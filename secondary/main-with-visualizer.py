@@ -1,5 +1,6 @@
 import click
 import manager
+import visualizer
 import helpers
 import cache
 import importation
@@ -69,6 +70,22 @@ def import_pl(url, output_dir, new_title):
         ytdl_options=_ytdl_options
     )
 
+@click.command(help='Visualiza um diretório e lista todas as playlists válidas que ele contém')
+@click.argument('directory')
+def view_dir(directory):
+    visualizer.view_directory(
+        directory=Path(directory)
+    )
+
+@click.command(help='Visualiza uma playlist individual, incluindo todos os vídeos que ela contém')
+@click.argument('playlist')
+@click.option('--show-desc', '-sd', is_flag=True, help='Inclui a descrição dos vídeos na tabela')
+def view_pl(playlist, show_desc):
+    visualizer.view_playlist(
+        playlist_file=Path(playlist),
+        show_description=show_desc
+    )
+
 @click.command(help='Move um vídeo de uma playlist para a outra')
 @click.argument('origin-playlist')
 @click.argument('destination-playlist')
@@ -111,16 +128,16 @@ def tui_pl(playlist):
 def cli():
     pass
 
-# variáveis pra não precisar requisitando as informações em cada comando
 _cache_youtube_videos = None
 _ytdl_options = None
 
-# adição dos comandos ao app
 cli.add_command(import_pl)
 cli.add_command(create)
 cli.add_command(insert)
 cli.add_command(remove)
 cli.add_command(delete)
+cli.add_command(view_dir)
+cli.add_command(view_pl)
 cli.add_command(move)
 cli.add_command(update_cache)
 cli.add_command(reset_settings)

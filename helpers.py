@@ -281,3 +281,17 @@ def json_write_cache(data_to_write: dict, cache_file: Path):
 
     with cache_file.open('w', encoding='utf-8') as f:
         json.dump(data_to_write, f, indent=4, ensure_ascii=False)
+    
+def normalize_json_file(path: Path | str):
+    # adicionar a extensão no caminho
+    normalized = str(path)
+    if not normalized.endswith('.json'):
+        normalized += '.json'
+    
+    # transformar o valor normalizado de volta em path
+    # caso esse tenha sido o formato passado pra essa função inicialmente
+    # ela deve apenas normalizar, não mudar o tipo
+    if isinstance(path, Path):
+        normalized = Path(normalized)
+
+    return normalized

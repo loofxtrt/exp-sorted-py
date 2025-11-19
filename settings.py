@@ -1,76 +1,50 @@
 import json
+import logger
+import helpers
 from pathlib import Path
 
 SETTINGS_DIRECTORY = Path.home() / '.config' / 'sorted' # INALTERÁVEL
 SETTINGS_FILE = SETTINGS_DIRECTORY / 'settings.json' # INALTERÁVEL
 
-class Settings:
-    """
-    ao ser instânciada, pode carregar ou alterar os arquivos de configuração  
-    serve principalmente pra obter o valor atualizado dos argumentos declaradas na configuração do usuário
-    """
-    def __init__(self):
-        # valores padrão (são sobreescritos pelo load)
-        self.cache_directory = SETTINGS_DIRECTORY / 'cache'
-        self.ytdl_options = {
-            'quiet': True,
-            'skip_download': True,
-        }
-    
-    def load(self):
-        try:
-            # abrir o arquivo de configuração e sobreescrever as variáveis dessa classe
-            # com os valores encontrados no arquivo. se não encontrar nenhum, só reseta pro padrão
-            with SETTINGS_FILE.open('r', encoding='utf-8') as f:
-                data = json.load(f)
-
-                # tem que ter str(self.) pq logo dps é convertido de volta pra path
-                get_cache = data.get('cache-directory', str(self.cache_directory))
-                self.cache_directory = Path(get_cache)
-
-                get_ytdl = data.get('ytdl-options', self.ytdl_options)
-                self.ytdl_options = get_ytdl
-        except FileNotFoundError:
-            # criar um arquivo de configuração padrão se não conseguir abrir
-            self.reset_or_set()
-
-    def reset_or_set(self):
-        # redefine explicitamente os valores padrão
-        default_cache = SETTINGS_DIRECTORY / 'cache'
-        default_ytdl = {
-            'quiet': True,
-            'skip_download': True,
-        }
-
-        # atualiza essa instância da classe com os valores padrão
-        self.cache_directory = default_cache
-        self.ytdl_options = default_ytdl
-
-        # reseta o arquivo de configurações ao padrão
-        # ou, se não existir, cria um arquivo de configuração novo
-        write_settings(
-            cache_directory=self.cache_directory,
-            ytdl_options=self.ytdl_options
-        )
-
-    # todos os marcados com @property não precisam de () pra serem chamados
-    # eles dependem de variáveis dinâmicas, que podem mudar,
-    # por isso são definidos individualmente e não na __init__
-    @property
-    def video_cache_file(self):
-        return self.cache_directory / 'videos.json'
-
-def write_settings(cache_directory: Path, ytdl_options: dict):
-    """
-    escreve argumentos no arquivo de configuração
-    """
-    # criar o dir de configurações caso ele não exista
-    SETTINGS_DIRECTORY.mkdir(exist_ok=True, parents=True)
-
-    settings = {
-        'cache-directory': str(cache_directory),
-        'ytdl-options': ytdl_options
+DEFAULTS = {
+    'cache-directory': str(SETTINGS_DIRECTORY / 'cache'),
+    'ytdl_options': {
+        'quiet': True,
+        'skip_download': True,
     }
+}
 
-    with SETTINGS_FILE.open('w', encoding='utf-8') as f:
-        json.dump(settings, f, indent=4, ensure_ascii=False)
+_data = None
+
+def _load():
+    global _data
+
+    if _data is None:
+        if SETTINGS_FILE.exists() and SETTINGS_FILE.is_file():
+            with SETTINGS_FILE.open('r') as f:
+                _data = json.load(f)
+        else:
+            _data = DEFAULTS
+
+def get_cache_file(service: str, section: str):
+    c_dir = get('cache-directory')
+    c_dir = Path(c_dir)
+
+    file = c_dir / service / section
+    file = helpers.normalize_json_file(file)
+    
+    if not file.exists():
+        logger.error(f'a seção {section} é inválida para o cache de {service}')
+        logger.error(f'o arquivo de cache não existe: {file}')
+        return
+
+    return file
+
+def get(key: str):
+    result = _data.get(key)
+
+    if result is None:
+        logger.error(f'erro ao carregar a configuração {key}, usando o valor default como fallback')
+        result = DEFAULTS.get(key)
+
+    return result

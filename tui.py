@@ -4,7 +4,7 @@ import manager
 import pyperclip
 import shutil
 import platform
-import settings as stg
+import settings
 from pathlib import Path
 from textual.app import App, ComposeResult
 from textual.widgets import DataTable, Header, Input, Label, Footer, DirectoryTree
@@ -494,19 +494,17 @@ class PlaylistView(App):
                 self.set_title() # reseta o título pro normal
                 self.header.remove_class('picking-mode-indicator')
 
-def main(playlist_file: Path, master_directory: Path):
+def main(playlist_file: Path, master_directory: Path, video_cache_file: Path, ytdl_options: dict):
     if not helpers.is_playlist_valid(playlist_file):
         return
 
     if not master_directory.is_dir():
         return
 
-    SETTINGS = stg.Settings()
-
     app = PlaylistView(
         playlist_file=playlist_file,
         master_directory=master_directory,
-        video_cache_file=SETTINGS.video_cache_file,
-        ytdl_options=SETTINGS.ytdl_options
+        video_cache_file=video_cache_file,
+        ytdl_options=ytdl_options
     )
     app.run()
