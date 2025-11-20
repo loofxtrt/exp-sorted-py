@@ -46,8 +46,9 @@ def create_playlist(
 
     # estruturar os dados
     data = {
-        'created-at': current_date,
         'id': playlist_id,
+        'type': 'playlist',
+        'created-at': current_date,
         'entries': []
     }
     if playlist_description:

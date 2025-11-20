@@ -1,3 +1,4 @@
+import inspect
 from rich.console import Console
 from rich.text import Text
 from rich.markup import escape
@@ -49,10 +50,25 @@ def message_formatter(message, level: str = 'info', with_background: bool = Fals
         for l in lines[1:]:
             formatted.append(f'\n   {l}')
 
+    # obter o chamador que usou o logger
+    frame = inspect.currentframe().f_back # quem chamou message_formatter
+    caller = frame.f_back.f_back # quem chamou o logger (ex: logger.info)
+    
+    file_name = caller.f_code.co_filename # nome do arquivo que chamou
+    function_name = caller.f_code.co_name # nome da função que chamou
+
+    file_name = file_name.split('/')[-1] # obter só o último item desse split, pra não ficar o path inteiro
+
     # imprimir o logger formatado
     text = Text()
     text.append(lvl_indicator)
     text.append(' | ')
+
+    text.append(file_name, style=color)
+    text.append(':')
+    text.append(function_name, style=color)
+    text.append(' | ')
+
     text.append_text(formatted)
 
     console = Console()
