@@ -1,8 +1,8 @@
-import requests
-import settings
+from managers import settings
+from utils import json_io
 import logger
+import requests
 import time
-import helpers
 
 def jsonify_reddit_url(url: str, include_about: bool = False) -> str:    
     # remover a barra do final da url se ela estiver presente
@@ -101,11 +101,11 @@ cache_reddit_posts = settings.get_cache_file('reddit', 'posts')
 data = get_post_info('https://www.reddit.com/r/Clamworks/comments/1p0kcrr/clamtube/')
 post_id = data.pop('id')
 
-cache = helpers.json_read_cache(cache_reddit_posts)
+cache = json_io.json_read_cache(cache_reddit_posts)
 already = cache.get(post_id)
 if not already:
     cache[post_id] = data
-    helpers.json_write_cache(cache, cache_reddit_posts)
+    json_io.json_write_cache(cache, cache_reddit_posts)
 else:
     operation = 'cached'
     if data.get('subreddit') == 'Clamworks':

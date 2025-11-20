@@ -1,11 +1,11 @@
-import click
-import manager
-import helpers
-import cache
-import importation
-import tui
-import settings
 from pathlib import Path
+from managers.playlists import playlist_manager
+from modules import importation
+from managers import cache
+from managers import settings
+from tui import tui
+from services import youtube
+import click
 
 @click.command(help='Cria uma playlist nova')
 @click.argument('title')
@@ -13,7 +13,7 @@ from pathlib import Path
 @click.option('--description', '-d', help='Incluir uma descrição na playlist')
 @click.option('--assume-default', '-y', is_flag=True, help='Assumir que se uma playlist no mesmo caminho já existir, ela deve ser sobreescrita')
 def create(title, output_dir, description, assume_default):
-    manager.create_playlist(
+    playlist_manager.create_playlist(
         playlist_title=title,
         playlist_description=description,
         output_dir=output_dir,
@@ -25,7 +25,7 @@ def create(title, output_dir, description, assume_default):
 @click.option('--assume-default', '-y', is_flag=True, help='Assumir que a playlist deve ser deletada sem confirmação')
 @click.option('--deep-validation', '-dv', is_flag=True, help='Se presente, vai exigir que uma playlist seja 100% válida pra ser deletada com esse comando')
 def delete(playlist, assume_default, deep_validation):
-    manager.delete_playlist(
+    playlist_manager.delete_playlist(
         playlist_file=Path(playlist),
         assume_default=assume_default,
         superficial_validation=deep_validation
@@ -37,9 +37,9 @@ def delete(playlist, assume_default, deep_validation):
 @click.option('--assume-default', '-y', is_flag=True, help='Assumir que a playlist deve ser criada se ela não existir ainda')
 def insert(playlist, urls, assume_default):
     for u in urls:
-        video_id = helpers.extract_youtube_video_id(url=u, ytdl_options=settings.ytdl_options)
+        video_id = youtube.extract_youtube_video_id(url=u, ytdl_options=settings.ytdl_options)
 
-        manager.insert_video(
+        playlist_manager.insert_video(
             video_id=video_id,
             playlist_file=Path(playlist),
             assume_default=assume_default
@@ -50,9 +50,9 @@ def insert(playlist, urls, assume_default):
 @click.argument('urls', nargs=-1)
 def remove(playlist, urls):
     for u in urls:
-        video_id = helpers.extract_youtube_video_id(url=u, ytdl_options=settings.ytdl_options)
+        video_id = youtube.extract_youtube_video_id(url=u, ytdl_options=settings.ytdl_options)
 
-        manager.remove_video(
+        playlist_manager.remove_video(
             video_id=video_id,
             playlist_file=Path(playlist)
         )
@@ -75,10 +75,10 @@ def import_pl(url, output_dir, new_title):
 @click.argument('url')
 @click.option('--ensure-destination', '-e', is_flag=True, help='Assumir que se a playlist de destino não existir, ela deve ser criada')
 def move(origin_playlist, destination_playlist, url, ensure_destination):
-    manager.move_video(
+    playlist_manager.move_video(
         origin_playlist=Path(origin_playlist),
         destination_playlist=Path(destination_playlist),
-        video_id=helpers.extract_youtube_video_id(url=url, ytdl_options=settings.get('ytdl_options')),
+        video_id=youtube.extract_youtube_video_id(url=url, ytdl_options=settings.get('ytdl_options')),
         ensure_destination=ensure_destination
     )
 

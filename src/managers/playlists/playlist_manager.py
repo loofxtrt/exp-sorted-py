@@ -1,21 +1,12 @@
-import settings
-import helpers
-import pathvalidate
-import logger
-from yt_dlp import YoutubeDL
 from pathlib import Path
+from utils import generic, json_io
+from . import playlist_utils
+import logger
+import pathvalidate
 
 class InvalidPlaylist(Exception): pass
 class EntryAlreadyExists(Exception): pass
 class EntryNotFound(Exception): pass
-
-def is_entry_present(playlist_data: dict, video_id: str):
-    # se existir um dicionário na lista de entries
-    # que contenha uma url idêntica a target passada pra função, é true
-    if any(entry.get('id') == video_id for entry in playlist_data['entries']):
-        return True
-    
-    return False
 
 def create_playlist(
     playlist_title: str,
@@ -31,8 +22,8 @@ def create_playlist(
         return
 
     # obter a data iso já formatada e um id aleatório novo pra playlist
-    current_date = helpers.get_iso_datetime()
-    playlist_id = helpers.generate_random_id()
+    current_date = generic.get_iso_datetime()
+    playlist_id = generic.generate_random_id()
 
     # construir o caminho final do arquivo
     # garantindo a não-redundância de extensões e a presença da estrutura de diretórios
@@ -60,7 +51,7 @@ def create_playlist(
     
     # se a playlist já existir
     if final_path.exists() and final_path.is_file():
-        answer = helpers.confirm(
+        answer = generic.confirm(
             prompt=f'o arquivo {final_path} já existe. prosseguir sobreescreverá ele, continuar?',
             assume_default=assume_default,
             default=False    
@@ -70,7 +61,7 @@ def create_playlist(
             return
 
     # escrever os dados da playlist em um arquivo que a representará
-    helpers.json_write_playlist(final_path, data)
+    json_io.json_write_playlist(final_path, data)
     logger.success(f'arquivo criado em {str(final_path)}')
 
 def delete_playlist(
@@ -79,22 +70,23 @@ def delete_playlist(
     superficial_validation: bool = False
     ):
     """
-    deleta uma playlist inteira  
-      
-    @param assume_default:  
-        se for verdadeiro, não pede uma confirmação antes de apagar uma playlist  
-      
-    @param superficial_validation:  
-        se verdadeiro, garante que apenas arquivos que sejam estritamente playlists válidas sejam deletados  
-        é falso por padrão porque se um arquivo de playlist tiver uma formatação quebrada, ele pode ser mais difícil de deletar
+    deleta uma playlist inteira
+
+    args:
+        assume_default:
+            se for verdadeiro, não pede uma confirmação antes de apagar uma playlist
+
+        superficial_validation:
+            se verdadeiro, garante que apenas arquivos que sejam estritamente playlists válidas sejam deletados
+            é falso por padrão porque se um arquivo de playlist tiver uma formatação quebrada, ele pode ser mais difícil de deletar
     """
 
-    if not helpers.is_playlist_valid(playlist_file=playlist_file, superficial_validation=superficial_validation):
+    if not playlist_utils.is_playlist_valid(playlist_file=playlist_file, superficial_validation=superficial_validation):
         logger.info('a playlist à ser deletada é inválida. verifique se o arquivo realmente representa uma ou o remova manualmente')
         return
     
-    answer = helpers.confirm(
-        prompt=f'deletar {helpers.get_playlist_title(playlist_file)}?',
+    answer = generic.confirm(
+        prompt=f'deletar {playlist_utils.get_playlist_title(playlist_file)}?',
         assume_default=assume_default,
         default=False
     )
@@ -122,9 +114,9 @@ def insert_video(playlist_file: Path, video_id: str, ensure_playlist: bool = Tru
             raise InvalidPlaylist(f'Could not insert video on playlist {playlist_file}')
 
     # ler os dados atuais da playlist
-    data = helpers.json_read_playlist(playlist_file)
+    data = json_io.json_read_playlist(playlist_file)
     
-    if not helpers.is_playlist_valid(playlist_file=playlist_file, playlist_data=data):
+    if not playlist_utils.is_playlist_valid(playlist_file=playlist_file, playlist_data=data):
         raise InvalidPlaylist(f'Playlist {playlist_file} exists but it is invalid')
 
     # verificação pra evitar duplicação acidental de vídeos
@@ -134,7 +126,7 @@ def insert_video(playlist_file: Path, video_id: str, ensure_playlist: bool = Tru
 
     # obter a data em que o vídeo foi inserido
     # é útil pra opções de ordenação por data de inserção
-    current_date = helpers.get_iso_datetime()
+    current_date = generic.get_iso_datetime()
     
     # montar o objeto que representa uma entrada de vídeo
     video = {            
@@ -144,14 +136,14 @@ def insert_video(playlist_file: Path, video_id: str, ensure_playlist: bool = Tru
 
     # adicionar o vídeo solicitado ao array de dicts e reescrever esses dados novos no mesmo arquivo
     data['entries'].append(video)
-    helpers.json_write_playlist(playlist_file, data)
+    json_io.json_write_playlist(playlist_file, data)
     
     logger.success(f'{video_id} adicionado na playlist {playlist_file.stem}')
 
 def remove_video(playlist_file: Path, video_id: str):
     if not video_id: return
 
-    data = helpers.json_read_playlist(playlist_file)
+    data = json_io.json_read_playlist(playlist_file)
     entries = data.get('entries')
 
     for entry in entries:
@@ -159,7 +151,7 @@ def remove_video(playlist_file: Path, video_id: str):
         # remove a entrada do dicionário a qual ele pertence e atualiza os dados
         if entry.get('id') == video_id:
             entries.remove(entry)
-            helpers.json_write_playlist(playlist_file, data)
+            json_io.json_write_playlist(playlist_file, data)
 
             logger.success(f'{video_id} removido da playlist {playlist_file.stem}')
             return
@@ -173,8 +165,8 @@ def move_video(origin_playlist: Path, destination_playlist: Path, video_id: str,
     """
     # obtém os dados das playlists, mas só a de origem é obrigatória
     # se a de destino não existir, pode ser criada em tempo de execução
-    origin_data = helpers.json_read_playlist(origin_playlist)
-    dest_data = helpers.json_read_playlist(destination_playlist)
+    origin_data = json_io.json_read_playlist(origin_playlist)
+    dest_data = json_io.json_read_playlist(destination_playlist)
 
     if not origin_data:
         logger.error(f'a playlist de origem não é válida')
@@ -186,17 +178,17 @@ def move_video(origin_playlist: Path, destination_playlist: Path, video_id: str,
 
             dest_parent = destination_playlist.parent
             dest_parent.mkdir(parents=True, exist_ok=True)
-            title = helpers.get_playlist_title(destination_playlist)
+            title = playlist_utils.get_playlist_title(destination_playlist)
             create_playlist(playlist_title=title, output_dir=dest_parent)
 
             # reler o arquivo atualizado
-            dest_data = helpers.json_read_playlist(destination_playlist)
+            dest_data = json_io.json_read_playlist(destination_playlist)
         else:
             raise InvalidPlaylist(f'Destination {destination_playlist} is not a valid playlist')
 
     # obter os títulos só pra logging
-    dest_title = helpers.get_playlist_title(destination_playlist)
-    origin_title = helpers.get_playlist_title(origin_playlist)
+    dest_title = playlist_utils.get_playlist_title(destination_playlist)
+    origin_title = playlist_utils.get_playlist_title(origin_playlist)
 
     # entra na playlist de origem
     # e pra cada entrada, checa se o id é igual ao do vídeo alvo de movimento

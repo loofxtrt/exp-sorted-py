@@ -1,7 +1,7 @@
 import json
 import logger
-import helpers
 from pathlib import Path
+from utils import generic
 
 SETTINGS_DIRECTORY = Path.home() / '.config' / 'sorted' # INALTERÁVEL
 SETTINGS_FILE = SETTINGS_DIRECTORY / 'settings.json' # INALTERÁVEL
@@ -35,7 +35,7 @@ def get_cache_file(service: str, section: str, ensure_creation: bool = True):
     c_dir = Path(c_dir)
 
     file = c_dir / service / section
-    file = helpers.normalize_json_file(file)
+    file = generic.normalize_json_file(file)
     
     if not file.exists():
         if not ensure_creation:

@@ -1,9 +1,9 @@
-import manager
-import helpers
-import pathvalidate
-import logger
 from pathlib import Path
 from yt_dlp import YoutubeDL
+from services import youtube
+from managers.playlists import playlist_manager
+import logger
+import pathvalidate
 
 def extract_youtube_playlist_data(yt_playlist_url: str, ytdl_options: dict) -> dict:
     """
@@ -22,7 +22,7 @@ def extract_youtube_playlist_data(yt_playlist_url: str, ytdl_options: dict) -> d
 
 def resolve_imported_playlist_title(yt_playlist_data: dict):
     """
-    baseado no título original de uma playlist do youtube, se necessário,  
+    baseado no título original de uma playlist do youtube, se necessário,
     sanitiza esse título pra que ele não tenha nenhum caractere inválido pra criação de um arquivo
     """
     
@@ -54,21 +54,22 @@ def import_playlist(
     new_title: str = None
     ):
     """
-    importa uma playlist do youtube pra uma playlist local  
-    pra funcionar, a playlist passada pra função deve ser pública ou não-listada  
+    importa uma playlist do youtube pra uma playlist local
+    pra funcionar, a playlist passada pra função deve ser pública ou não-listada
+
+    args:
+        output_dir:
+            diretório onde a playlist vai ser criada ao ser importada
       
-    @param output_dir:  
-        diretório onde a playlist vai ser criada ao ser importada  
-      
-    @param yt_playlist_url:  
-        url da playlist do youtube  
-      
-    @param new_title:  
-        opcional. novo título pra quando a playlist for importada  
-        se não for passado, o título que estava no youtube vai ser usado no lugar  
-      
-    @param ytdl_option:  
-        opções da api do yt-dlp
+        yt_playlist_url:
+            url da playlist do youtube
+
+        new_title:
+            opcional. novo título pra quando a playlist for importada
+            se não for passado, o título que estava no youtube vai ser usado no lugar
+
+        ytdl_options:
+            opções da api do yt-dlp
     """
     
     logger.info(f'iniciando a importação de uma playlist do youtube: {yt_playlist_url}')
@@ -84,7 +85,7 @@ def import_playlist(
         new_title = resolve_imported_playlist_title(info)
     
     # cria a playlist e reconstrói como é o novo caminho dela
-    manager.create_playlist(playlist_title=new_title, output_dir=output_dir, assume_default=True)
+    playlist_manager.create_playlist(playlist_title=new_title, output_dir=output_dir, assume_default=True)
     final_path = output_dir / (new_title + '.json')
 
     # passar todas as urls da playlist do youtube pra playlist local
@@ -93,5 +94,5 @@ def import_playlist(
     urls = [entry['webpage_url'] for entry in info['entries'] if entry]
 
     for u in urls:
-        video_id = helpers.extract_youtube_video_id(url=u, ytdl_options=ytdl_options)
-        manager.insert_video(playlist_file=final_path, video_id=video_id, assume_default=True)
+        video_id = youtube.extract_youtube_video_id(url=u, ytdl_options=ytdl_options)
+        playlist_manager.insert_video(playlist_file=final_path, video_id=video_id, assume_default=True)

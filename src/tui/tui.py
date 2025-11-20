@@ -1,15 +1,16 @@
-import cache
-import helpers
-import manager
-import pyperclip
-import shutil
-import platform
-import settings
 from pathlib import Path
 from textual.app import App, ComposeResult
 from textual.widgets import DataTable, Header, Input, Label, Footer, DirectoryTree
 from textual.containers import Horizontal, Vertical
 from rich.text import Text
+from managers import cache
+from managers import settings
+from managers.playlists import playlist_manager, playlist_utils
+from utils import json_io, formatting
+from services import youtube
+import pyperclip
+import shutil
+import platform
 
 def insert_video_row(video_data: dict, video_id: str, table: DataTable):
     """
@@ -24,9 +25,9 @@ def insert_video_row(video_data: dict, video_id: str, table: DataTable):
     duration = video_data.get('duration', 0) # valor em segundos. o 0 é um fallback caso esse campo não esteja presente
 
     # formtações
-    upload_date = helpers.format_upload_date(upload_date)
-    view_count = helpers.format_view_count(view_count)
-    duration = helpers.format_duration(duration)
+    upload_date = formatting.format_upload_date(upload_date)
+    view_count = formatting.format_view_count(view_count)
+    duration = formatting.format_duration(duration)
 
     # adicionar o row a tabela
     # não precisa de return pq a instância já é passada como argumento
@@ -90,20 +91,21 @@ class PlaylistView(App):
 
     def __init__(self, playlist_file: Path, video_cache_file: Path, ytdl_options: dict, master_directory: Path, **kwargs):
         """
-        @param playlist_file:  
-            primeira playlist a ser carregada  
-            quando mudanças ocorrem, como carregar outra playlist, a variável self.playlist_file deve ser atualizada  
-            ela é o método de obter qual é playlist atualmente sendo vista  
-          
-        @param video_cache_file:  
-            arquivo contendo o cache dos vídeos  
-          
-        @param ytdl_options:  
-            opções pra api do ytdl  
-          
-        @param master_directory:  
-            diretório que vai ser exibido como raíz da file tree  
-            não afeta diretamente o funcionamento da visualização da playlist
+        args:
+            playlist_file:
+                primeira playlist a ser carregada
+                quando mudanças ocorrem, como carregar outra playlist, a variável self.playlist_file deve ser atualizada
+                ela é o método de obter qual é playlist atualmente sendo vista
+        
+            video_cache_file:
+                arquivo contendo o cache dos vídeos
+            
+            ytdl_options:
+                opções pra api do ytdl
+        
+            master_directory:
+                diretório que vai ser exibido como raíz da file tree
+                não afeta diretamente o funcionamento da visualização da playlist
         """
 
         super().__init__(**kwargs) # herdar o comportamento da classe padrão
@@ -159,7 +161,7 @@ class PlaylistView(App):
         )
 
         # adicionar os vídeos, lendo a playlist e obtendo os dados pelo cache
-        data = helpers.json_read_playlist(playlist_file)
+        data = json_io.json_read_playlist(playlist_file)
 
         for e in data.get('entries'):
             video_id = e.get('id')
@@ -252,7 +254,7 @@ class PlaylistView(App):
 
         selected_file = event.path
 
-        if not helpers.is_playlist_valid(selected_file):
+        if not playlist_utils.is_playlist_valid(selected_file):
             self.notify(message='Not a valid playlist', severity='warning')
             return
 
@@ -284,7 +286,7 @@ class PlaylistView(App):
                 return
 
             # se a playlist de destino for válida
-            if not helpers.is_playlist_valid(destination, superficial_validation=True):
+            if not playlist_utils.is_playlist_valid(destination, superficial_validation=True):
                 self.destination_input.add_class('input-error')
                 self.notify(message='Destination playlist is not valid', severity='error')
                 return
@@ -373,7 +375,7 @@ class PlaylistView(App):
                 self.notify(message='No video URL provided', severity='warning')
                 return
 
-            video_id = helpers.extract_youtube_video_id(video_url, self.ytdl_options)
+            video_id = youtube.extract_youtube_video_id(video_url, self.ytdl_options)
             if not video_id:
                 self.notify(message=f'Could not extract video ID from {video_url}', severity='error')
                 return
@@ -468,7 +470,7 @@ class PlaylistView(App):
                 self.notify(message='Could not identify the first video of the selected list', severity='error')
                 return
 
-            video_url = helpers.build_youtube_url(video_id)
+            video_url = youtube.build_youtube_url(video_id)
             if not video_url:
                 self.notify(message=f'Could not build URL from the ID {video_id}')
                 return
@@ -495,7 +497,7 @@ class PlaylistView(App):
                 self.header.remove_class('picking-mode-indicator')
 
 def main(playlist_file: Path, master_directory: Path, video_cache_file: Path, ytdl_options: dict):
-    if not helpers.is_playlist_valid(playlist_file):
+    if not playlist_utils.is_playlist_valid(playlist_file):
         return
 
     if not master_directory.is_dir():
