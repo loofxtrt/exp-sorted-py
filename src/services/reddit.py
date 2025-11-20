@@ -24,6 +24,17 @@ def jsonify_reddit_url(url: str, include_about: bool = False) -> str:
     
     return url
 
+def prefix_subreddiy(subreddit: str) -> str:
+    """
+    adiciona r/ na frente do nome de um subreddit. o nome passado pra essa função
+    deve ser o nome real do subreddit, não o nome de display
+    """
+
+    if not subreddit.startswith('r/'):
+        subreddit = f'r/{subreddit}'
+    
+    return subreddit
+
 def get_post_info(url: str, retries: int = 3):
     url = jsonify_reddit_url(url)
 
@@ -89,6 +100,8 @@ def get_subreddit_info(url: str):
         'subscribers': data.get('subscribers')
     }
 
+    return data
+
 # tem flair no post mas não no usuário
 #get_post_info('https://www.reddit.com/r/unixporn/comments/1p0z2ki/just_be_consistent_brutal_hyprland/')
 
@@ -103,12 +116,9 @@ post_id = data.pop('id')
 
 cache = json_io.json_read_cache(cache_reddit_posts)
 already = cache.get(post_id)
+
 if not already:
     cache[post_id] = data
     json_io.json_write_cache(cache, cache_reddit_posts)
 else:
-    operation = 'cached'
-    if data.get('subreddit') == 'Clamworks':
-        operation = 'clammed'
-    
-    logger.info(f'Skipping cache writing, post already {operation}')
+    logger.info(f'pulando salvamento de dados. o post já está no cache')

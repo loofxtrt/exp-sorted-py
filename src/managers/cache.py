@@ -52,51 +52,6 @@ def get_cached_video_info(video_id: str, cache_file: Path):
         else:
             logger.error(f'erro ao tentar obter as informações do vídeo com o id: {video_id}')
 
-def ytdl_extract_video_info(url: str, ytdl_instance: YoutubeDL) -> dict | None :
-    """
-    usa a api do yt-dlp pra extrair dinamicamente os dados de um vídeo
-    por fazer uso da api, deve ser evitada na maioria dos casos
-    
-    essa função geralmente é chamada pela consultora de vídeos já cacheados,
-    quando ela tenta buscar um vídeo no cache e ele ainda não existe, ela chama
-    
-    args:
-        url:
-            url do vídeo a ser consultado
-
-        ytdl_instance:
-            instância já criada da api do yt-dlp. isso evita que múltiplas instâncias precisem ser criadas
-    """
-    
-    try:
-        info = ytdl_instance.extract_info(url, download=False)
-    except Exception as err:
-        logger.error(f'erro ao tentar extrair os dados do vídeo {url}: {err}')
-        return None
-
-    video_id = info.get('id') # dígitos que aparecem depois de watch?v= em urls de vídeos
-    title = info.get('title')
-    upload_date = info.get('upload_date') # yyyymmdd
-    uploader = info.get('uploader')
-    view_count = info.get('view_count')
-    duration = info.get('duration', 0) # segundos. 0 é fallback se o campo não estiver presente
-    thumbnail = info.get('thumbnail')
-    description = info.get('description')
-    
-    # estruturar os dados obtidos em um objeto json
-    video_data = {
-        'id': video_id,
-        'title': title,
-        'upload_date': upload_date,
-        'uploader': uploader,
-        'view_count': view_count,
-        'duration': duration,
-        'description': description,
-        'thumbnail': thumbnail,
-    }
-
-    return video_data
-
 def insert_video_on_memory_cache(video_data: dict, cache_data: dict):
     """
     constrói a estrutura que um vídeo deve ter no cache
@@ -146,7 +101,7 @@ def write_video_cache(
 
     # obter os dados do vídeo e do cache atual
     ytdl = YoutubeDL(ytdl_options)
-    video = ytdl_extract_video_info(url, ytdl_instance=ytdl)
+    video = youtube.extract_youtube_video_info(url, ytdl_instance=ytdl)
     
     cache = json_io.json_read_cache(cache_file)
     
@@ -228,7 +183,7 @@ def update_full_cache(
         # incluir vídeos que ainda não estavam no cache
         # se for explicitamente pedido, também atualiza os já existentes
         url = youtube.build_youtube_url(v_id)
-        video = ytdl_extract_video_info(url, ytdl_instance=ytdl)
+        video = youtube.extract_youtube_video_info(url, ytdl_instance=ytdl)
         
         insert_video_on_memory_cache(video_data=video, cache_data=new_cache)
     
