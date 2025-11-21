@@ -6,9 +6,12 @@ from utils import generic
 SETTINGS_DIRECTORY = Path.home() / '.config' / 'sorted' # INALTERÁVEL
 SETTINGS_FILE = SETTINGS_DIRECTORY / 'settings.json' # INALTERÁVEL
 
+# IMPORTANTE
+# nas configurações e em jsons no geral, se usa kebab-case, não snake_case
+# isso só não se aplica a algumas configs do ytdl, que precisam usar underline em vez de hífen
 DEFAULTS = {
     'cache-directory': str(SETTINGS_DIRECTORY / 'cache'),
-    'ytdl_options': {
+    'ytdl-options': {
         'quiet': True,
         'skip_download': True,
     }

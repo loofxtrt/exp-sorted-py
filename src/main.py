@@ -130,6 +130,6 @@ if __name__ == '__main__':
     settings._load()
 
     _cache_youtube_videos = settings.get_cache_file('youtube', 'videos')
-    _ytdl_options = settings.get('ytdl_options')
+    _ytdl_options = settings.get('ytdl-options')
 
     cli()

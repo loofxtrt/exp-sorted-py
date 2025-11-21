@@ -1,5 +1,10 @@
+/*
 $accent-primary: #ae7cffff;
 $accent-secondary: #75f1c6ff;
+*/
+
+$accent-primary: white;
+$accent-secondary: #5b68d8ff;
 
 $white: white;
 $black: #0d0d0dff;
@@ -9,12 +14,27 @@ $green: #a6e3a1;
 $yellow: #f9e2af;
 $red: #f38ba8;
 
+$border: round $accent-primary 30%;
+
+
+
 Screen {
     background: $black;
 }
 
+
+
+.plain-container {
+    border: $border;
+    height: auto; /* faz os containers não se expandirem desnecessariamente */
+}
+
+
+
 DirectoryTree {
+    /*background: $grey;*/
     background: transparent;
+    border: $border;
     width: 20%;
 }
 
@@ -23,11 +43,30 @@ DirectoryTree * {
 }
 
 .directory-tree--extension {
+    /* cor das extensões de arquivos */
     color: dimgrey;
 }
 
+DirectoryTree > .tree--cursor {
+    /* cor dos itens sob o cursor */
+    background: transparent;
+    color: $accent-secondary;
+}
+
+DirectoryTree > .tree--highlight-line {
+    /* cor da linha inteira sob o cursor */
+    background: $accent-primary 10%;
+}
+
+DirectoryTree > .tree--guides-selected {
+    /* cor das linhas de hierarquia */
+    color: $accent-secondary;
+}
+
+
+
 DataTable {
-    border: round $accent-primary 30%;
+    border: $border;
     height: 1fr;
 }
 
@@ -42,8 +81,10 @@ DataTable > .datatable--cursor {
     text-style: none;
 }
 
+
+
 Header {
-    margin-bottom: 1;
+    /*margin-bottom: 1;*/
 }
 
 Header, Footer {
@@ -51,9 +92,18 @@ Header, Footer {
     color: $white;
 }
 
+Header.picking-mode-indicator {
+    background: $accent-secondary;
+    
+    color: $black;
+    text-style: bold;
+}
+
 .footer-key--key {
     color: $accent-secondary;
 }
+
+
 
 Input {
     background: transparent;
@@ -65,6 +115,8 @@ Input {
 Input:focus {
     background: $accent-primary 30%;
 }
+
+
 
 Toast {
     padding: 0;
@@ -79,10 +131,13 @@ Toast.-error {
     border-left: outer $red; /* borda parecida com a padrão */
     background: $red 10%
 }
+
 Toast.-information {
     border-left: outer $green;
     background: $green 10%;
 }
+
+
 
 .input-warning {
     background: $yellow 10%;
@@ -122,13 +177,6 @@ Toast.-information {
 }
 
 .input-container {
-    border: round $accent-primary 30%;
+    border: $border;
     height: auto; /* faz os containers não se expandirem desnecessariamente */
-}
-
-Header.picking-mode-indicator {
-    background: $accent-secondary;
-    
-    color: $black;
-    text-style: bold;
 }

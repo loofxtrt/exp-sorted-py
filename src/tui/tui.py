@@ -24,7 +24,7 @@ def insert_video_row(video_data: dict, video_id: str, table: DataTable):
     view_count = video_data.get('view_count')
     duration = video_data.get('duration', 0) # valor em segundos. o 0 é um fallback caso esse campo não esteja presente
 
-    # formtações
+    # formatações
     upload_date = formatting.format_upload_date(upload_date)
     view_count = formatting.format_view_count(view_count)
     duration = formatting.format_duration(duration)
@@ -35,39 +35,56 @@ def insert_video_row(video_data: dict, video_id: str, table: DataTable):
     table.add_row(' ', title, uploader, duration, view_count, upload_date, key=video_id)
 
 def build_input(label_contents: str, placeholder_contents: str | None = None):
-        """
-        wrapper que retorna um container que contém um label + um input  
-        o input field é retornado separadamente para que ele pode ser definido como variável global da classe
-          
-        o uso dessa função deve ser:  
-        nome_container, self.nome_input = build_input(...)  
-          
-        dessa forma, pode ser aplicado como:  
-        yield nome_container  
-          
-        e o nome_input agora é uma variável global acessível com self.nome_input
-        """
-
-        # adicionar dois pontos no final do label
-        if not label_contents.strip().endswith(':'):
-            label_contents += ':'
-
-        # criar o label
-        input_label = Label(label_contents).add_class('input-label')
-        input_field = Input()
+    """
+    wrapper que retorna um container que contém um label + um input  
+    o input field é retornado separadamente para que ele pode ser definido como variável global da classe
         
-        # adicionar o placeholder no input caso tenha sido passado pra função
-        if placeholder_contents:
-            input_field.placeholder = placeholder_contents
+    o uso dessa função deve ser:  
+    nome_container, self.nome_input = build_input(...)  
+        
+    dessa forma, pode ser aplicado como:  
+    yield nome_container  
+        
+    e o nome_input agora é uma variável global acessível com self.nome_input
+    """
 
-        # adicionar os widgets finais ao container horizontal
-        # isso é o equivalente de with Horziontal(): yield Widget()
-        # mas em vez de só criar os widgets dentro, insere eles com _add_child()
-        container = Horizontal().add_class('input-container')
-        container._add_child(input_label)
-        container._add_child(input_field)
+    # adicionar dois pontos no final do label
+    if not label_contents.strip().endswith(':'):
+        label_contents += ':'
 
-        return container, input_field
+    # criar o label
+    input_label = Label(label_contents).add_class('input-label')
+    input_field = Input()
+    
+    # adicionar o placeholder no input caso tenha sido passado pra função
+    if placeholder_contents:
+        input_field.placeholder = placeholder_contents
+
+    # adicionar os widgets finais ao container horizontal
+    # isso é o equivalente de with Horziontal(): yield Widget()
+    # mas em vez de só criar os widgets dentro, insere eles com _add_child()
+    container = Horizontal().add_class('input-container')
+    container._add_child(input_label)
+    container._add_child(input_field)
+
+    return container, input_field
+
+def build_header(
+    playlist_file: Path,
+    playlist_data: dict,
+    video_cache_file: Path,
+    ) -> Vertical:
+    header = Vertical().add_class('plain-container')
+    
+    title = playlist_utils.get_playlist_title(playlist_file)
+    duration = playlist_utils.get_playlist_duration(playlist_data, video_cache_file)
+    video_count = str(playlist_utils.get_playlist_video_count(playlist_data))
+
+    for var in [title, duration, video_count]:
+        label = Label(var)
+        header._add_child(label)
+    
+    return header
 
 class PlaylistView(App):
     # cores da logo
@@ -115,21 +132,11 @@ class PlaylistView(App):
         self.master_directory = master_directory
         self.ytdl_options = ytdl_options
 
+        # lê aqui e declara como self pra não precisar ler múltiplas vezes
+        self.playlist_data = json_io.json_read_playlist(playlist_file)
+
         self.selected_row_keys = [] # lista de rows selecionados da tabela
         self.picking_state = False # indica se o usuário está ou não em estado de seleção de um destino
-
-    def set_title(self):
-        """
-        define o título que aparece no header, geralmente contendo o caminho da playlist atual
-        """
-
-        # relativo ao master directory (no caso, relativo ao pai dele pra ele poder aparecer)
-        # ex: master/creators/playlist-atual.json
-        try:
-            self.title = str(self.playlist_file.relative_to(self.master_directory.parent))
-        except ValueError:
-            # fallback caso a playlist não esteja em nenhum lugar do master directory
-            self.title = self.playlist_file
 
     def get_video_title(self, video_id) -> str | None:
         # obtém o título do vídeo
@@ -139,7 +146,16 @@ class PlaylistView(App):
 
         return title
 
-    def load_playlist_table(self, table: DataTable, playlist_file: Path):
+    def load_playlist_header(self):
+        t = playlist_utils.get_playlist_title(self.playlist_file)
+        d = str(playlist_utils.get_playlist_duration(self.playlist_data, self.video_cache_file))
+        vc = str(playlist_utils.get_playlist_video_count(self.playlist_data))
+
+        self.header_title.update(f'Playlist title: {t}')
+        self.header_duration.update(f'Total duration: {d}')
+        self.header_video_count.update(f'Video count: {vc}')
+
+    def load_playlist_table(self, table: DataTable, playlist_data: Path):
         # adiciona na tabela os rows dos vídeos da playlist
         # obtendo as informações dos vídeos pelos ids presentes nas entries da playlist
 
@@ -161,9 +177,7 @@ class PlaylistView(App):
         )
 
         # adicionar os vídeos, lendo a playlist e obtendo os dados pelo cache
-        data = json_io.json_read_playlist(playlist_file)
-
-        for e in data.get('entries'):
+        for e in playlist_data.get('entries'):
             video_id = e.get('id')
             info = cache.get_cached_video_info(video_id=video_id, cache_file=self.video_cache_file)
 
@@ -176,9 +190,16 @@ class PlaylistView(App):
     def compose(self) -> ComposeResult:
         # cria e adiciona os widgets iniciais ao app
         
-        self.header = Header()
-        self.header.icon = ''
-        yield self.header
+        with Vertical().add_class('plain-container'):
+            self.header_title = Label()
+            self.header_duration = Label()
+            self.header_video_count = Label()
+            
+            yield self.header_title
+            yield self.header_duration
+            yield self.header_video_count
+            
+            self.load_playlist_header()
 
         with Horizontal():
             # abrir a file tree no diretório principal
@@ -217,7 +238,7 @@ class PlaylistView(App):
 
     def on_mount(self):
         # depois do app inicializar, quando estiver seguro fazer alterações
-        self.load_playlist_table(table=self.table, playlist_file=self.playlist_file)
+        self.load_playlist_table(table=self.table, playlist_data=self.playlist_data)
 
     # detectar eventos de seleção (por padrão, enter) em rows
     def on_data_table_row_selected(self, event: DataTable.RowSelected):
@@ -253,8 +274,9 @@ class PlaylistView(App):
         """
 
         selected_file = event.path
+        playlist_data = json_io.json_read_playlist(selected_file)
 
-        if not playlist_utils.is_playlist_valid(selected_file):
+        if not playlist_utils.is_playlist_valid(playlist_file=selected_file, playlist_data=playlist_data):
             self.notify(message='Not a valid playlist', severity='warning')
             return
 
@@ -265,8 +287,12 @@ class PlaylistView(App):
 
         # selecionar normalmente caso nenhum estado especial esteja ativo
         self.playlist_file = selected_file
+        self.playlist_data = playlist_data
         self.selected_row_keys = []
-        self.load_playlist_table(table=self.table, playlist_file=selected_file)
+        self.load_playlist_table(table=self.table, playlist_data=playlist_data)
+
+        # também atualizar o header
+        self.load_playlist_header()
 
     def on_key(self, event):
         # limpar os quaisquer erros/avisos/sucessos visuais ao clicar em qualquer tecla

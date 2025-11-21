@@ -1,5 +1,6 @@
 from pathlib import Path
-from utils import json_io
+from utils import json_io, formatting
+from managers import cache
 import logger
 
 def get_playlist_file_by_id(playlist_id: str, directory: Path):
@@ -25,6 +26,21 @@ def get_playlist_title(playlist_file: Path):
     # o título de uma playlist é o nome do arquivo sem a extensão
     if playlist_file.exists() and playlist_file.is_file():
         return playlist_file.stem
+
+def get_playlist_video_count(playlist_data: dict):
+    return len(playlist_data.get('entries'))
+
+def get_playlist_duration(playlist_data: dict, video_cache_file: Path):
+    duration = 0
+    for e in playlist_data.get('entries'):
+        video = cache.get_cached_video_info(e.get('id'), video_cache_file)
+        if not video:
+            continue
+
+        duration += video.get('duration')
+    
+    duration = formatting.format_duration(duration)
+    return duration
 
 def is_playlist_valid(playlist_file: Path, playlist_data: dict | None = None, superficial_validation: bool = False) -> bool:
     """
@@ -52,10 +68,10 @@ def is_playlist_valid(playlist_file: Path, playlist_data: dict | None = None, su
     if not playlist_file.exists():
         logger.warning(f'o arquivo não existe: {playlist_file}')
         return False
-    elif not playlist_file.is_file():
+    if not playlist_file.is_file():
         logger.warning(f'o caminho não representa um arquivo: {playlist_file}')
         return False
-    elif not playlist_file.suffix == '.json':
+    if not playlist_file.suffix == '.json':
         logger.warning(f'o arquivo não é tem a extensão .json: {playlist_file}')
         return False
 
