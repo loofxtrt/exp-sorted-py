@@ -20,6 +20,11 @@ DEFAULTS = {
 _data = None
 
 def _load():
+    """
+    carrega as configurações existentes ou cria as padrões caso ainda não existam
+    essa função geralmente é usada só uma vez e só em um lugar, no momento de inicialização do software
+    """
+
     global _data
 
     if _data is None:
