@@ -1,16 +1,17 @@
 from pathlib import Path
+import shutil
+import platform
+
 from textual.app import App, ComposeResult
 from textual.widgets import DataTable, Header, Input, Label, Footer, DirectoryTree
 from textual.containers import Horizontal, Vertical
 from rich.text import Text
-from managers import cache
-from managers import settings
-from managers.playlists import playlist_manager, playlist_utils
-from utils import json_io, formatting
-from services import youtube
 import pyperclip
-import shutil
-import platform
+
+from ..managers import cache, settings
+from ..managers.playlists import playlist_manager, playlist_utils
+from ..utils import json_io, formatting
+from ..services import youtube
 
 def insert_video_row(video_data: dict, video_id: str, table: DataTable):
     """

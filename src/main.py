@@ -1,11 +1,12 @@
 from pathlib import Path
-from managers.playlists import playlist_manager
-from modules import importation
-from managers import cache
-from managers import settings
-from tui import tui
-from services import youtube
+
 import click
+
+from .modules import importation
+from .tui import tui
+from .services import youtube
+from .managers import cache, settings
+from .managers.playlists import playlist_manager
 
 @click.command(help='Cria uma playlist nova')
 @click.argument('title')
@@ -37,7 +38,7 @@ def delete(playlist, assume_default, deep_validation):
 @click.option('--assume-default', '-y', is_flag=True, help='Assumir que a playlist deve ser criada se ela não existir ainda')
 def insert(playlist, urls, assume_default):
     for u in urls:
-        video_id = youtube.extract_youtube_video_id(url=u, ytdl_options=settings.ytdl_options)
+        video_id = youtube.extract_youtube_video_id(url=u, ytdl_options=_ytdl_options)
 
         playlist_manager.insert_video(
             video_id=video_id,
@@ -50,7 +51,7 @@ def insert(playlist, urls, assume_default):
 @click.argument('urls', nargs=-1)
 def remove(playlist, urls):
     for u in urls:
-        video_id = youtube.extract_youtube_video_id(url=u, ytdl_options=settings.ytdl_options)
+        video_id = youtube.extract_youtube_video_id(url=u, ytdl_options=_ytdl_options)
 
         playlist_manager.remove_video(
             video_id=video_id,
@@ -78,7 +79,7 @@ def move(origin_playlist, destination_playlist, url, ensure_destination):
     playlist_manager.move_video(
         origin_playlist=Path(origin_playlist),
         destination_playlist=Path(destination_playlist),
-        video_id=youtube.extract_youtube_video_id(url=url, ytdl_options=settings.get('ytdl_options')),
+        video_id=youtube.extract_youtube_video_id(url=url, ytdl_options=_ytdl_options),
         ensure_destination=ensure_destination
     )
 

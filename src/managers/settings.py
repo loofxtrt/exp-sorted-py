@@ -1,7 +1,8 @@
-import json
-import logger
 from pathlib import Path
-from utils import generic
+import json
+
+from .. import logger
+from ..utils import generic
 
 SETTINGS_DIRECTORY = Path.home() / '.config' / 'sorted' # INALTERÁVEL
 SETTINGS_FILE = SETTINGS_DIRECTORY / 'settings.json' # INALTERÁVEL
@@ -29,12 +30,26 @@ def _load():
 
     if _data is None:
         if SETTINGS_FILE.exists() and SETTINGS_FILE.is_file():
-            with SETTINGS_FILE.open('r') as f:
+            # se o arquivo já existir, só carregar as configurações dele
+            with SETTINGS_FILE.open('r', encoding='utf-8') as f:
                 _data = json.load(f)
         else:
+            # se não existir, criar um com as configurações padrões
             _data = DEFAULTS
 
+            with SETTINGS_FILE.open('w', encoding='utf-8') as f:
+                json.dump(_data, f, indent=4, ensure_ascii=False)
+
 def get_cache_file(service: str, section: str, ensure_creation: bool = True):
+    """
+    args:
+        service:
+            ex: youtube
+        
+        section:
+            ex: playlists
+    """
+    
     c_dir = get('cache-directory')
     if not c_dir:
         logger.error(f'erro ao obter o diretório de cache: {c_dir}')
@@ -60,10 +75,13 @@ def get_cache_file(service: str, section: str, ensure_creation: bool = True):
     return file
 
 def get(key: str):
+    global _data
+
+    # carregar as configurações se isso ainda não foi feito
     if _data is None:
-        logger.error('os settings devem ser carregados com _load antes de serem usados')
-        return
-    
+        _load()
+
+    # obter o valor correspondente a chave passada pra essa função
     result = _data.get(key)
 
     if result is None:

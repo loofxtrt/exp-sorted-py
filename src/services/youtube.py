@@ -1,6 +1,21 @@
 from urllib.parse import urlparse, parse_qs
+
 from yt_dlp import YoutubeDL
-import logger
+
+from .. import logger
+from ..managers import settings
+
+def instance_ytdl(options: dict | None = None):
+    """
+    se o ytdl for ser usado duas vezes numa mesma função, a instância retornada
+    por essa função pode ser atribuída a uma variável pra evitar a recriação da api
+    """
+
+    if options is None:
+        options = settings.get('ytdl-options')
+
+    ytdl = YoutubeDL(options)
+    return ytdl
 
 def build_youtube_url(video_id: str):
     """
@@ -10,7 +25,7 @@ def build_youtube_url(video_id: str):
 
     return f'https://www.youtube.com/watch?v={video_id}'
 
-def extract_youtube_video_id(url: str, ytdl_options: dict):
+def extract_youtube_video_id(url: str, ytdl: YoutubeDL):
     """
     extrai o id de um vídeo por uma url do youtube
     o yt-dlp já tem um método pra obter o id, mas esse método é mais rápido
@@ -31,9 +46,7 @@ def extract_youtube_video_id(url: str, ytdl_options: dict):
     logger.warning('erro ao extrair id com regex. tentando novamente com a api do yt-dlp')
 
     try:
-        ytdl = YoutubeDL(ytdl_options)
         info = ytdl.extract_info(url, download=False)
-
         return info.get('id', None)
     except:
         logger.error(f'erro ao extrair id com a api do yt-dlp')
@@ -41,7 +54,7 @@ def extract_youtube_video_id(url: str, ytdl_options: dict):
     logger.critical(f'nenhum método de extração de id funcionou com a url: {url}')
     return None
 
-def extract_youtube_video_info(url: str, ytdl_instance: YoutubeDL) -> dict | None :
+def extract_youtube_video_info(url: str, ytdl: YoutubeDL) -> dict | None :
     """
     usa a api do yt-dlp pra extrair dinamicamente os dados de um vídeo
     por fazer uso da api, deve ser evitada na maioria dos casos
@@ -53,12 +66,12 @@ def extract_youtube_video_info(url: str, ytdl_instance: YoutubeDL) -> dict | Non
         url:
             url do vídeo a ser consultado
 
-        ytdl_instance:
+        ytdl:
             instância já criada da api do yt-dlp. isso evita que múltiplas instâncias precisem ser criadas
     """
     
     try:
-        info = ytdl_instance.extract_info(url, download=False)
+        info = ytdl.extract_info(url, download=False)
     except Exception as err:
         logger.error(f'erro ao tentar extrair os dados do vídeo {url}: {err}')
         return None

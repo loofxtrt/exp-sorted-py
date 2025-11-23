@@ -1,6 +1,7 @@
 from pathlib import Path
-from managers.playlists import playlist_utils
 import json
+
+from ..managers.playlists import playlist_utils
 
 def json_read_playlist(playlist_file: Path) -> dict | None:
     """

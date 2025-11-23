@@ -1,7 +1,9 @@
 from pathlib import Path
-import logger
+from datetime import datetime
 import random
 import string
+
+from .. import logger
 
 def truncate_text(text: str, max_characters: int):
     if len(text) > max_characters:
