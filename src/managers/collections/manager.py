@@ -7,7 +7,8 @@ import pathvalidate
 
 from . import utils
 from ... import logger
-from ...utils import generic 
+from ...utils import generic, json_io
+from ...managers import settings
 
 class CollectionAlreadyExists(Exception): pass
 
@@ -88,11 +89,35 @@ def create_collection(
     write_file(file=file, data=data)
     logger.success(f'collection criada com sucesso: {file}')
 
-def insert_entry(
+def insert_entry_generic(
     collection: Path,
-    entry_id: str,
-    entry_type: str | None = None,
-    entry_service: str | None = None,
+    media_type: str,
+    url: str
+    ):
+    data = {
+        'type': media_type,
+        'url': url
+    }
+    handle_entry_insertion(collection=collection, entry_data=data)
+
+def insert_entry_service(
+    collection: Path,
+    media_type: str,
+    resolvable_id: str,
+    service_name: str
+    ):
+    data = {
+        'type': media_type,
+        'service-metadata': {
+            'resolvable-id': resolvable_id,
+            'service-name': service_name 
+        }
+    }
+    handle_entry_insertion(collection=collection, entry_data=data)
+
+def handle_entry_insertion(
+    collection: Path,
+    entry_data: dict,
     presence_verification: bool = True
     ):
     """
@@ -102,44 +127,48 @@ def insert_entry(
         collection:
             caminho do arquivo da collection onde inserir
         
-        entry_id:
-            id do CONTEÚDO da entry. isso não é um id aleatório
-            é o id que é usado pra reconstruir a url da entrada depois
-            ex: se uma entrada se referir ao vídeo 'youtube.com/watch?v=erb4n8PW2qw'
-                ela deve ter o id como 'erb4n8PW2qw'
-        
-        entry_type:
-            tipo da mídia inserida
-            ex: video, post, profile, community etc.
+        entry_data:
+            dados a serem escritos como uma nova entry
 
-        entry_service:
-            serviço a qual a entrada pertence
-            ex: reddit, youtube etc.
-
-            se for nulo, se considera que é uma url genérica da web
-        
         presence_verification:
             verifica se a entrada já existe pra evitar duplicação
     """
 
-    data = read_file(collection)
-    if presence_verification:
-        if utils.is_entry_present(data, entry_id):
-            logger.info('o item já está presente na collection de destino')
-            return
+    collection_data = read_file(collection)
+    if not collection_data:
+        logger.error(f'a collection {collection} não tem dados válidos')
+        return
     
-    entry = {
-        'id': entry_id,
-        'inserted-at': generic.get_iso_datetime(),
-    }
-    if entry_type:
-        entry['type'] = entry_type
-    if entry_service:
-        entry['service'] = entry_service
+    if presence_verification:
+        url = entry_data.get('url')
+        service_metadata = entry_data.get('service-metadata')
 
-    data['entries'].append(entry)
-    write_file(collection, data)
-    logger.success(f'entrada {entry_id} adicionada em {collection}')
+        entries = collection_data.get('entries', [])
+        if url is not None:
+            for e in entries:
+                if e.get('url') == url:
+                    logger.info(f'{url} já está presente em {collection}')
+                    return
+        elif service_metadata is not None:
+            service_name = service_metadata.get('service-name')
+            resolvable_id = service_metadata.get('resolvable-id')
+            
+            for e in entries:
+                s_md = e.get('service-metadata')
+                n = s_md.get('service-name')
+                ri = s_md.get('resolvable-id')
+
+                if ri == resolvable_id and n == service_name:
+                    logger.info(f'o id {resolvable_id} pertencente ao serviço {service_name} já está presente em  {collection}')
+                    return 
+
+    entry_data['id'] = generic.generate_random_id()
+    entry_data['inserted-at'] = generic.get_iso_datetime()
+
+    collection_data['entries'].append(entry_data)
+    write_file(collection, collection_data)
+
+    logger.success(f'entrada {entry_data} adicionada em {collection}')
 
 def remove_entry(
     collection: Path,
@@ -165,7 +194,7 @@ def remove_entry(
             entries.remove(e)
             write_file(collection, data)
     
-            logger.info(f'entrada {entry_id} removida de {collection}')
+            logger.success(f'entrada {entry_id} removida de {collection}')
             return # não continua procurando depois da primeira ocorrência
         
     logger.info(f'entrada {entry_id} não encontrada em {collection}')
@@ -228,7 +257,7 @@ def move_entry(
 
     logger.info(f'entrada {entry_id} não encontrada em {src_collection}')
 
-def read_file(file: Path) -> dict:
+def read_file(file: Path) -> dict | None:
     """
     lê um arquivo de collection e retorna os dados como dicionário,
     se o caminho for inválido retorna um dicionário vazio
@@ -240,12 +269,9 @@ def read_file(file: Path) -> dict:
 
     if not file.is_file():
         logger.error('o caminho a ser lido deve ser um arquivo')
-        return {}
+        return
 
-    with file.open('r', encoding='utf-8') as f:
-        data = json.load(f)
-
-    return data
+    return json_io.read_json(file)
 
 def write_file(file: Path, data: dict):
     """
@@ -264,8 +290,7 @@ def write_file(file: Path, data: dict):
             dados que serão escritos no arquivo
     """
 
-    with file.open('w', encoding='utf-8') as f:
-        json.dump(data, f, indent=4, ensure_ascii=False)
+    json_io.write_json(file=file, data=data)
 
 def delete_path_permanently(path: Path):
     """
@@ -319,6 +344,7 @@ def path_to_trash(path: Path, custom_trash: Path | None = None):
         custom_trash.mkdir(parents=True, exist_ok=True)
         shutil.move(src=path, dst=custom_trash)
 
+# TESTES
 if __name__ == '__main__':
     try:
         create_collection(
@@ -332,14 +358,13 @@ if __name__ == '__main__':
     this_coll = Path('./testei/leros.json')
     
     from .types import videos
-    from ...services import youtube
+    from ...services import youtube#, reddit
 
     ytdl = youtube.instance_ytdl()
 
     url = 'https://www.youtube.com/watch?v=erb4n8PW2qw'
-    _id = youtube.extract_youtube_video_id(url, ytdl)
 
-    remove_entry(this_coll, _id)
+    remove_entry(this_coll, 'QGtnv_pc')
 
     videos.insert_youtube_video(
         collection=this_coll,

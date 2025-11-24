@@ -4,7 +4,7 @@ from ...collections import manager, utils
 from ....services import reddit
 from .... import logger
 
-_ENTRY_TYPE = 'post'
+_ENTRY_TYPE = 'posts'
 
 def insert_reddit_post(collection: Path, url: str):
     data = reddit.get_post_info(url)

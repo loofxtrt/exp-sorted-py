@@ -40,14 +40,14 @@ def _load():
             with SETTINGS_FILE.open('w', encoding='utf-8') as f:
                 json.dump(_data, f, indent=4, ensure_ascii=False)
 
-def get_cache_file(service: str, section: str, ensure_creation: bool = True):
+def get_cache_file(service: str, section: str, ensure_creation: bool = True) -> Path | None:
     """
     args:
         service:
             ex: youtube
         
         section:
-            ex: playlists
+            ex: videos
     """
     
     c_dir = get('cache-directory')

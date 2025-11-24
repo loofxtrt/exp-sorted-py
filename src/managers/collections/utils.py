@@ -6,14 +6,14 @@ def get_file_from_id(collection_id: str, base_directory: Path) -> None | Path:
     if not base_directory.is_dir():
         return
     
-    for coll in base_directory.rglob('*.json'):
+    for file in base_directory.rglob('*.json'):
         try:
-            data = read_file(coll)
+            data = read_file(file)
         except Exception:
             continue
         
         if data.get('id') == collection_id:
-            return coll
+            return file
     
     return None
 
@@ -29,7 +29,7 @@ def get_entry_count(data: dict) -> int:
     
     return len(data.get('entries', []))
 
-def is_entry_present(data: dict, target_id: str):
+def is_entry_present(data: dict, target_id: str) -> bool:
     """
     verifica se há pelo menos uma ocorrência do target_id dentro dos dicionários presentes em entries
     esses dicionários sempre têm o campo 'id', o que faz eles serem verificáveis
