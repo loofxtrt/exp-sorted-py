@@ -86,7 +86,7 @@ def create_collection(
     if description is not None:
         data['description'] = description
 
-    write_file(file=file, data=data)
+    utils.write_file(file=file, data=data)
     logger.success(f'collection criada com sucesso: {file}')
 
 def insert_entry_generic(
@@ -134,49 +134,26 @@ def handle_entry_insertion(
             verifica se a entrada já existe pra evitar duplicação
     """
 
-    collection_data = read_file(collection)
+    collection_data = utils.read_file(collection)
     if not collection_data:
         logger.error(f'a collection {collection} não tem dados válidos')
         return
-    
     if presence_verification:
-        url = entry_data.get('url')
-        service_metadata = entry_data.get('service-metadata')
-
-        entries = collection_data.get('entries', [])
-        if url is not None:
-            for e in entries:
-                if e.get('url') == url:
-                    logger.info(f'{url} já está presente em {collection}')
-                    return
-        elif service_metadata is not None:
-            service_name = service_metadata.get('service-name')
-            resolvable_id = service_metadata.get('resolvable-id')
-            
-            for e in entries:
-                s_md = e.get('service-metadata')
-                n = s_md.get('service-name')
-                ri = s_md.get('resolvable-id')
-
-                if ri == resolvable_id and n == service_name:
-                    logger.info(f'o id {resolvable_id} pertencente ao serviço {service_name} já está presente em  {collection}')
-                    return 
+        if utils.is_entry_present(entry_data, collection_data):
+            logger.info(f'a entrada já está presente em {collection}')
+            return
 
     entry_data['id'] = generic.generate_random_id()
     entry_data['inserted-at'] = generic.get_iso_datetime()
 
     collection_data['entries'].append(entry_data)
-    write_file(collection, collection_data)
+    utils.write_file(collection, collection_data)
 
     logger.success(f'entrada {entry_data} adicionada em {collection}')
 
-def remove_entry(
-    collection: Path,
-    entry_id: str
-    ):
+def remove_entry(collection: Path, entry_id: str):
     """
     remove uma entrada específica de uma collection
-    NÃO remove duplicatas, só a primeira ocorrência do id passado pra função
 
     args:
         collection:
@@ -184,15 +161,21 @@ def remove_entry(
     
         entry_id:
             id da entrada que deve ser removida
+
+            pelo id ser o da entrada e não um resolvable_id,
+            NÃO remove duplicatas baseadas nos metadados delas
     """
 
-    data = read_file(collection)
+    data = utils.read_file(collection)
     entries = data.get('entries')
     
+    # percorre todas as entradas da collection
+    # até achar uma com o id igual ao sendo alvo de deleção,
+    # assim removendo da lista e atualizando o arquivo
     for e in entries:
         if e.get('id') == entry_id:
             entries.remove(e)
-            write_file(collection, data)
+            utils.write_file(collection, data)
     
             logger.success(f'entrada {entry_id} removida de {collection}')
             return # não continua procurando depois da primeira ocorrência
@@ -219,78 +202,31 @@ def move_entry(
             id da entrada a ser movida
     
         presence_verification:
-            impede de mover se a entrada já existe no destino
+            impede de mover se a entrada já existir no destino
     """
 
-    data_src = read_file(src_collection)
-    data_dest = read_file(dest_collection)
-
+    # obter os dados das collections
+    data_src = utils.read_file(src_collection)
+    data_dest = utils.read_file(dest_collection)
     if not data_src or not data_dest:
         logger.error('alguns dados são inválidos')
         return
 
+    # obter a entrada em específico pelo id dela
+    entry = utils.get_entry_data_by_id(data_src, entry_id)
+    if not entry:
+        logger.info(f'entrada {entry_id} não encontrada em {src_collection}')
+        return
     if presence_verification:
-        if utils.is_entry_present(data_dest, entry_id):
+        if utils.is_entry_present(data_dest, entry):
             logger.info('o item já está presente na collection de destino')
             return
 
-    for e in data_src.get('entries'):
-        _id = e.get('id') # definido aqui pra não precisar repetir dentro do if
+    # mover a entrada de uma collection pra outra
+    handle_entry_insertion(dest_collection, entry, presence_verification)
+    remove_entry(src_collection, entry_id)
         
-        if _id == entry_id:
-            # ao encontrar o item com o mesmo id do alvo de moção,
-            # obter os outros dados que são necessários pra mover ele de uma collection pra outra
-            _type = e.get('type')
-            _service = e.get('service')
-
-            # se esse for tá rodando, é pq ele passou pela verificação do início dessa func,
-            # ou pq essa função foi explicitamente dita pra ignorar a verificação
-            # nos dois cenários, verificar verificar de novo
-            _verify = False
-
-            insert_entry(
-                collection=dest_collection, presence_verification=_verify,
-                entry_id=_id, entry_type=_type, entry_service=_service
-            )
-            remove_entry(collection=src_collection, entry_id=_id)
-            logger.info(f'entrada {entry_id} movida de {src_collection} para {dest_collection}')
-
-    logger.info(f'entrada {entry_id} não encontrada em {src_collection}')
-
-def read_file(file: Path) -> dict | None:
-    """
-    lê um arquivo de collection e retorna os dados como dicionário,
-    se o caminho for inválido retorna um dicionário vazio
-
-    args:
-        file:
-            caminho do arquivo json que deve ser lido
-    """
-
-    if not file.is_file():
-        logger.error('o caminho a ser lido deve ser um arquivo')
-        return
-
-    return json_io.read_json(file)
-
-def write_file(file: Path, data: dict):
-    """
-    escreve o dicionário informado em um arquivo de collection
-    pode ser tanto um arquivo inexistente quanto um existente
-    
-    geralmente não deve ser usado sozinho fora desse módulo
-    porque os métodos que o utilizam já sabem como lidar de forma segura
-    com dados de arquivos já existentes, como a insert_entry
-
-    args:
-        file:
-            caminho do arquivo onde os dados serão gravados
-    
-        data:
-            dados que serão escritos no arquivo
-    """
-
-    json_io.write_json(file=file, data=data)
+    logger.info(f'entrada {entry_id} movida de {src_collection} para {dest_collection}')
 
 def delete_path_permanently(path: Path):
     """
@@ -355,7 +291,16 @@ if __name__ == '__main__':
     except CollectionAlreadyExists:
         pass
 
+    try:
+        create_collection(
+            title='chinelo',
+            output_directory=Path('./testei')
+        )
+    except CollectionAlreadyExists:
+        pass
+
     this_coll = Path('./testei/leros.json')
+    chinelo_coll = Path('./testei/chinelo.json')
     
     from .types import videos
     from ...services import youtube#, reddit
@@ -364,10 +309,15 @@ if __name__ == '__main__':
 
     url = 'https://www.youtube.com/watch?v=erb4n8PW2qw'
 
-    remove_entry(this_coll, 'QGtnv_pc')
+    #remove_entry(this_coll, 'QGtnv_pc')
 
-    videos.insert_youtube_video(
-        collection=this_coll,
-        url=url,
-        ytdl=ytdl
+    #videos.insert_youtube_video(
+    #    collection=this_coll,
+    #    url=url,
+    #    ytdl=ytdl
+    #)
+    move_entry(
+        src_collection=this_coll,
+        dest_collection=chinelo_coll,
+        entry_id='uxPQcuH3'
     )

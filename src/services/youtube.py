@@ -35,10 +35,7 @@ def unstable_extract_video_id(url: str) -> str | None:
     elif query.hostname == 'youtu.be':
         return query.path.lstrip('/')
 
-def stable_extract_video_id(url: str, ytdl: YoutubeDL):
-    pass
-
-def extract_video_id(url: str, ytdl: YoutubeDL | None = None):
+def handle_video_id_extraction(url: str, ytdl: YoutubeDL):
     """
     extrai o id de um vídeo por uma url do youtube
     o yt-dlp já tem um método pra obter o id, mas esse método é mais rápido
@@ -49,27 +46,17 @@ def extract_video_id(url: str, ytdl: YoutubeDL | None = None):
     """
 
     # tenta extrair por regex, que é mais rápido, mas menos robusto
-    if not url.startswith(('http://', 'https://')):
-        url = 'https://' + url # adiciona esquema se faltar
-
-    query = urlparse(url)
-    if query.hostname in ('www.youtube.com', 'youtube.com'):
-        return parse_qs(query.query).get('v', [None])[0]
-    elif query.hostname == 'youtu.be':
-        return query.path.lstrip('/')
+    _id = unstable_extract_video_id(url)
 
     # se não conseguir o id só pelo regex, tenta com o yt-dlp
-    if ytdl is not None:
+    if not _id:
         logger.warning('erro ao extrair id com regex. tentando novamente com a api do yt-dlp')
-
-        try:
-            info = ytdl.extract_info(url, download=False)
-            return info.get('id', None)
-        except:
-            logger.error(f'erro ao extrair id com a api do yt-dlp')
+        video_data = extract_video_info(url, ytdl)
+        _id = video_data.get('id')
     
-    logger.error(f'nenhum método de extração de id funcionou com a url: {url}')
-    return None
+    if not _id:
+        logger.error(f'nenhum método de extração de id funcionou com a url: {url}')
+    return _id
 
 def extract_video_info(url: str, ytdl: YoutubeDL) -> dict | None :
     """

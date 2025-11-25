@@ -1,8 +1,9 @@
 from rich.console import Console
 from rich.text import Text
 from rich.markup import escape
+from rich.panel import Panel
 
-def message_formatter(message, level: str = 'info', with_background: bool = False):
+def message_formatter(message, level: str = 'info', mode: str = 'panel', shorten: bool = True):
     lvl_colors = {
         'warning': 'yellow',
         'info': 'blue',
@@ -12,23 +13,28 @@ def message_formatter(message, level: str = 'info', with_background: bool = Fals
         'success': 'green'
     }
 
+    lvl_shorts = {
+        'warning': 'warn',
+        'info': 'info',
+        'debug': 'dbug',
+        'error': 'erro',
+        'critical': 'crit',
+        'success': 'okay'
+    }
+
     # formatar o indicador de level
-    # usa o level passado pra essa função, em lowercase, pra obter a cor do indicador
+    # passa pra lowercase pra previnir erros
+    level = level.lower()
+
+    # usa o level passado pra essa função pra obter a cor do indicador dele
+    color = lvl_colors.get(level, 'blue')
+    
+    # se especificado, também encurta o nome do level
+    if shorten:
+        level = lvl_shorts.get(level)
+    
     # na hora de imprimir, sempre mostra o level em uppercase
-    # se o with_background estiver presente, adiciona isso (mas só pra primeira linha, pro resto não)
-    color = lvl_colors.get(level.lower(), 'blue')
-    
     level = level.upper()
-    if with_background:
-        # caso tenhha background, adicionar padding extra e o background em si
-        level_display = f' {level} '
-        handle_color = f'black on {color}'
-    else:
-        level_display = level
-        handle_color = color
-    
-    handle_color += ' bold'
-    lvl_indicator = Text(level_display, handle_color)
 
     # iniciar a formatação da mensagem
     # escape é usado pra que o rich não reconheça caracteres do texto como parte da formatação
@@ -40,23 +46,44 @@ def message_formatter(message, level: str = 'info', with_background: bool = Fals
     lines = message.splitlines()
     
     if len(lines) > 0:
-        # adiciona a primeira linha de todas com a cor normal
-        # ao lado do indicador de level
-        formatted.append(lines[0], style='bold')
+        # adicionada separada pra não ter quebra de linha extra no começo
+        formatted.append(lines[0])
 
         # verifica as demais linhas, começando do índice 1
         # pq o índice zero já foi adicionado como primeira linha
         for l in lines[1:]:
-            formatted.append(f'\n   {l}')
+            formatted.append(f'\n{l}')
 
     # imprimir o logger formatado
-    text = Text()
-    text.append(lvl_indicator)
-    text.append(' | ')
-    text.append_text(formatted)
+    printable = None
+    if mode == 'panel':
+        # o modo painel usa o panel do rich
+        panel = Panel(
+            formatted,
+            title=level,
+            title_align='left',
+            border_style=color
+        )
+
+        printable = panel
+    else:
+        # qualquer outro modo diferente do panel é considerado
+        # como texto puro, então ele é formatado como um log convencional
+        #
+        # nesse modo, também deixa o indicador do level em negrito
+        # além de adicionar uma separação entre o level e o texto
+        handle_color = color + ' bold'
+        level_display = Text(level, handle_color)
+        
+        text = Text()
+        text.append(level_display)
+        text.append(' | ')
+        text.append(formatted)
+
+        printable = text
 
     console = Console()
-    console.print(text)
+    console.print(printable)
 
 def warning(message):
     message_formatter(message=message, level='warning')
@@ -71,7 +98,7 @@ def success(message):
     message_formatter(message=message, level='success')
 
 def debug(message):
-    message_formatter(message=message, level='debug', with_background=True)
+    message_formatter(message=message, level='debug')
 
 def critical(message):
-    message_formatter(message=message, level='critical', with_background=True)
+    message_formatter(message=message, level='critical')

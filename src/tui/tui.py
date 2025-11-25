@@ -6,86 +6,23 @@ from textual.app import App, ComposeResult
 from textual.widgets import DataTable, Header, Input, Label, Footer, DirectoryTree
 from textual.containers import Horizontal, Vertical
 from rich.text import Text
+from yt_dlp import YoutubeDL
 import pyperclip
 
 from ..managers import cache, settings
-from ..managers.playlists import playlist_manager, playlist_utils
+from ..managers.collections import manager as collection_manager, utils as collection_utils
+from ..managers.collections.types import videos
 from ..utils import json_io, formatting
 from ..services import youtube
+from . import structure
 
-def insert_video_row(video_data: dict, video_id: str, table: DataTable):
-    """
-    extrai e formata as informações de vídeo passadas pra função  
-    e no fim dela, adiciona um row na tabela alvo
-    """
+def get_video_title(video_id: str) -> str | None:
+    # obtém o título do vídeo
+    # útil pra notificações ou logging. o id puro não é intuitivo pra leitura humana
+    data = cache.get_cached_entry_data(resolvable_id=video_id, cache_file=self.video_cache_file)
+    title = data.get('title', None)
 
-    title = video_data.get('title')
-    upload_date = video_data.get('upload_date')
-    uploader = video_data.get('uploader')
-    view_count = video_data.get('view_count')
-    duration = video_data.get('duration', 0) # valor em segundos. o 0 é um fallback caso esse campo não esteja presente
-
-    # formatações
-    upload_date = formatting.format_upload_date(upload_date)
-    view_count = formatting.format_view_count(view_count)
-    duration = formatting.format_duration(duration)
-
-    # adicionar o row a tabela
-    # não precisa de return pq a instância já é passada como argumento
-    # a key é a key_row, usada pra identificar esse row, nesse caso, o id do vídeo
-    table.add_row(' ', title, uploader, duration, view_count, upload_date, key=video_id)
-
-def build_input(label_contents: str, placeholder_contents: str | None = None):
-    """
-    wrapper que retorna um container que contém um label + um input  
-    o input field é retornado separadamente para que ele pode ser definido como variável global da classe
-        
-    o uso dessa função deve ser:  
-    nome_container, self.nome_input = build_input(...)  
-        
-    dessa forma, pode ser aplicado como:  
-    yield nome_container  
-        
-    e o nome_input agora é uma variável global acessível com self.nome_input
-    """
-
-    # adicionar dois pontos no final do label
-    if not label_contents.strip().endswith(':'):
-        label_contents += ':'
-
-    # criar o label
-    input_label = Label(label_contents).add_class('input-label')
-    input_field = Input()
-    
-    # adicionar o placeholder no input caso tenha sido passado pra função
-    if placeholder_contents:
-        input_field.placeholder = placeholder_contents
-
-    # adicionar os widgets finais ao container horizontal
-    # isso é o equivalente de with Horziontal(): yield Widget()
-    # mas em vez de só criar os widgets dentro, insere eles com _add_child()
-    container = Horizontal().add_class('input-container')
-    container._add_child(input_label)
-    container._add_child(input_field)
-
-    return container, input_field
-
-def build_header(
-    playlist_file: Path,
-    playlist_data: dict,
-    video_cache_file: Path,
-    ) -> Vertical:
-    header = Vertical().add_class('plain-container')
-    
-    title = playlist_utils.get_playlist_title(playlist_file)
-    duration = playlist_utils.get_playlist_duration(playlist_data, video_cache_file)
-    video_count = str(playlist_utils.get_playlist_video_count(playlist_data))
-
-    for var in [title, duration, video_count]:
-        label = Label(var)
-        header._add_child(label)
-    
-    return header
+    return title
 
 class PlaylistView(App):
     # cores da logo
@@ -107,122 +44,59 @@ class PlaylistView(App):
     ]
     CSS_PATH = "style.tcss"
 
-    def __init__(self, playlist_file: Path, video_cache_file: Path, ytdl_options: dict, master_directory: Path, **kwargs):
-        """
-        args:
-            playlist_file:
-                primeira playlist a ser carregada
-                quando mudanças ocorrem, como carregar outra playlist, a variável self.playlist_file deve ser atualizada
-                ela é o método de obter qual é playlist atualmente sendo vista
-        
-            video_cache_file:
-                arquivo contendo o cache dos vídeos
-            
-            ytdl_options:
-                opções pra api do ytdl
-        
-            master_directory:
-                diretório que vai ser exibido como raíz da file tree
-                não afeta diretamente o funcionamento da visualização da playlist
-        """
-
+    def __init__(self, playlist_file: Path, video_cache_file: Path, master_directory: Path, ytdl: YoutubeDL, **kwargs):
         super().__init__(**kwargs) # herdar o comportamento da classe padrão
 
         self.playlist_file = playlist_file
         self.video_cache_file = video_cache_file
         self.master_directory = master_directory
-        self.ytdl_options = ytdl_options
+        self.ytdl = ytdl
 
         # lê aqui e declara como self pra não precisar ler múltiplas vezes
-        self.playlist_data = json_io.json_read_playlist(playlist_file)
+        self.playlist_data = collection_utils.read_file(playlist_file)
 
         self.selected_row_keys = [] # lista de rows selecionados da tabela
         self.picking_state = False # indica se o usuário está ou não em estado de seleção de um destino
 
-    def get_video_title(self, video_id) -> str | None:
-        # obtém o título do vídeo
-        # útil pra notificações ou logging. o id puro não é intuitivo pra leitura humana
-        data = cache.get_cached_video_info(video_id=video_id, cache_file=self.video_cache_file)
-        title = data.get('title', None)
-
-        return title
-
-    def load_playlist_header(self):
-        t = playlist_utils.get_playlist_title(self.playlist_file)
-        d = str(playlist_utils.get_playlist_duration(self.playlist_data, self.video_cache_file))
-        vc = str(playlist_utils.get_playlist_video_count(self.playlist_data))
-
-        self.header_title.update(f'Playlist title: {t}')
-        self.header_duration.update(f'Total duration: {d}')
-        self.header_video_count.update(f'Video count: {vc}')
-
-    def load_playlist_table(self, table: DataTable, playlist_data: Path):
-        # adiciona na tabela os rows dos vídeos da playlist
-        # obtendo as informações dos vídeos pelos ids presentes nas entries da playlist
-
-        # limpar a tabela antes de carregar
-        table.clear(True)
-
-        # adicionar as colunas
-        table.add_column( # pra verificar o estado de seleção dos rows
-            ' ',
-            key='selection-status',
-        )
-
-        table.add_columns( # colunas gerais
-            'Title',
-            'Uploader',
-            'Duration',
-            'View count',
-            'Upload date'
-        )
-
-        # adicionar os vídeos, lendo a playlist e obtendo os dados pelo cache
-        for e in playlist_data.get('entries'):
-            video_id = e.get('id')
-            info = cache.get_cached_video_info(video_id=video_id, cache_file=self.video_cache_file)
-
-            insert_video_row(
-                video_data=info,
-                video_id=video_id, # pra seleção posterior dos rows
-                table=table
-            )
-
     def compose(self) -> ComposeResult:
         # cria e adiciona os widgets iniciais ao app
         
-        with Vertical().add_class('plain-container'):
+        self.header = Vertical().add_class('plain-container')
+        with self.header:
             self.header_title = Label()
-            self.header_duration = Label()
             self.header_video_count = Label()
             
             yield self.header_title
-            yield self.header_duration
             yield self.header_video_count
             
-            self.load_playlist_header()
+            structure.header.update(
+                collection_file=self.playlist_file,
+                collection_data=self.playlist_data,
+                label_title=self.header_title,
+                label_entry_count=self.header_video_count
+            )
 
         with Horizontal():
             # abrir a file tree no diretório principal
             self.file_tree = DirectoryTree(str(self.master_directory))
             self.file_tree.ICON_FILE = ''
-            self.file_tree.ICON_NODE = '󰉋 ' #󰉖 nf-md-x
-            self.file_tree.ICON_NODE_EXPANDED = '󰝰 ' #󰷏
+            self.file_tree.ICON_NODE = '󰉋 '
+            self.file_tree.ICON_NODE_EXPANDED = '󰝰 '
             yield self.file_tree
 
             # conteúdo principal
             with Vertical():
                 # inputs
-                with Vertical():
+                with Vertical().add_class('plain-container'):
                     # url de um novo vídeo a ser adicionado a playlist
-                    insert_container, self.video_input = build_input(
+                    insert_container, self.video_input = structure.input.build(
                         label_contents='Insert video',
                         placeholder_contents='https://www.youtube.com/watch?v=erb4n8PW2qw'
                     )
                     yield insert_container
 
                     # destino pra onde os vídeos devem ir ao clicar em 'move'
-                    destination_container, self.destination_input = build_input(
+                    destination_container, self.destination_input = structure.input.build(
                         label_contents='Moving destination',
                         placeholder_contents='~/playlists/destination.json'
                     )
@@ -239,7 +113,11 @@ class PlaylistView(App):
 
     def on_mount(self):
         # depois do app inicializar, quando estiver seguro fazer alterações
-        self.load_playlist_table(table=self.table, playlist_data=self.playlist_data)
+        structure.table.update_collection_table(
+            table=self.table,
+            collection_data=self.playlist_data,
+            cache_file=self.video_cache_file
+        )
 
     # detectar eventos de seleção (por padrão, enter) em rows
     def on_data_table_row_selected(self, event: DataTable.RowSelected):
@@ -275,11 +153,7 @@ class PlaylistView(App):
         """
 
         selected_file = event.path
-        playlist_data = json_io.json_read_playlist(selected_file)
-
-        if not playlist_utils.is_playlist_valid(playlist_file=selected_file, playlist_data=playlist_data):
-            self.notify(message='Not a valid playlist', severity='warning')
-            return
+        playlist_data = collection_utils.read_file(selected_file)
 
         # tomar a seleção como moving destination caso o estado de picking esteja ativo
         if self.picking_state:
@@ -290,16 +164,21 @@ class PlaylistView(App):
         self.playlist_file = selected_file
         self.playlist_data = playlist_data
         self.selected_row_keys = []
-        self.load_playlist_table(table=self.table, playlist_data=playlist_data)
+        table.update_collection_table(
+            table=self.table,
+            collection_data=self.playlist_data,
+            cache_file=self.video_cache_file
+            )
 
         # também atualizar o header
-        self.load_playlist_header()
+        structure.header.update(
+            collection_file=self.playlist_file,
+            collection_data=self.playlist_data,
+            label_title=self.header_title,
+            label_entry_count=self.header_video_count
+        )
 
     def on_key(self, event):
-        # limpar os quaisquer erros/avisos/sucessos visuais ao clicar em qualquer tecla
-        self.destination_input.remove_class('input-warning')
-        self.destination_input.remove_class('input-error')
-
         if event.key == 'm':
             """
             mover os vídeos selecionados pro endereço definido ao pressionar a tecla
@@ -312,15 +191,8 @@ class PlaylistView(App):
                 self.notify(message='Destination is the same as the current playlist', severity='information')
                 return
 
-            # se a playlist de destino for válida
-            if not playlist_utils.is_playlist_valid(destination, superficial_validation=True):
-                self.destination_input.add_class('input-error')
-                self.notify(message='Destination playlist is not valid', severity='error')
-                return
-
             # se a quantidade de vídeos selecionados seja válida, maior que 0
             if not len(self.selected_row_keys) > 0:
-                self.destination_input.add_class('input-warning')
                 self.notify(message='No videos selected', severity='warning')
                 return
 
@@ -334,11 +206,10 @@ class PlaylistView(App):
                 video_id = row_key.value # o id tá dentro da row_key, ele não é a row_key em si
 
                 try:
-                    manager.move_video(
-                        origin_playlist=self.playlist_file,
-                        destination_playlist=destination,
-                        video_id=video_id,
-                        ensure_destination=True
+                    collection_manager.move_entry(
+                        src_collection=self.playlist_file,
+                        dest_collection=destination,
+                        entry_id=video_id
                     )
 
                     self.selected_row_keys.remove(row_key) # remove da lista de selecionados
@@ -374,13 +245,13 @@ class PlaylistView(App):
                 video_id = row_key.value
 
                 # obter o título pra notificar
-                title = self.get_video_title(video_id)
+                title = get_video_title(video_id)
                 self.notify(message=f'Removed {title}', severity='information')
 
                 # remoção real do vídeo
-                manager.remove_video(
-                    playlist_file=self.playlist_file,
-                    video_id=video_id
+                collection_manager.remove_entry(
+                    collection=self.playlist_file,
+                    entry_id=video_id
                 )
         
         if event.key == 's':
@@ -402,7 +273,7 @@ class PlaylistView(App):
                 self.notify(message='No video URL provided', severity='warning')
                 return
 
-            video_id = youtube.extract_youtube_video_id(video_url, self.ytdl_options)
+            video_id = youtube.handle_video_id_extraction(video_url, self.ytdl_options)
             if not video_id:
                 self.notify(message=f'Could not extract video ID from {video_url}', severity='error')
                 return
@@ -411,7 +282,7 @@ class PlaylistView(App):
             # feito aqui mesmo pq é mais barato do que recarregar a tabela inteira
             # assim, o row individual pode ser adicionado em tempo de execução
             # e as notificações também podem usar o título do vídeo sem custos adicionais
-            video_data = cache.get_cached_video_info(video_id, self.video_cache_file)
+            video_data = cache.get_cached_entry_data(video_id, self.video_cache_file)
             if not video_data:
                 self.notify(message='Something went wrong while extracting the video data', severity='error')
                 return
@@ -421,16 +292,14 @@ class PlaylistView(App):
             # inserir o vídeo na playlist atual
             # e também atualizar na tabela
             try:
-                manager.insert_video(
-                    playlist_file=self.playlist_file,
-                    video_id=video_id,
-                    ensure_playlist=True
+                videos.insert_youtube_video(
+                    collection=self.playlist_file,
+                    ytdl=self.ytdl
                 )
 
-
-                insert_video_row(
-                    video_data=video_data,
-                    video_id=video_id,
+                table.insert_entry_row(
+                    entry_data=video_data,
+                    entry_id=video_id,
                     table=self.table
                 )
 
@@ -517,16 +386,11 @@ class PlaylistView(App):
             self.picking_state = not self.picking_state
 
             if self.picking_state:
-                self.title = 'Picking mode activated'
-                self.header.add_class('picking-mode-indicator') # tem alterações no css especificas pra essa classe
+                self.notify('Picking mode enabled', severity='information')
             else:
-                self.set_title() # reseta o título pro normal
-                self.header.remove_class('picking-mode-indicator')
+                self.notify('Picking mode disabled', severity='information')
 
-def main(playlist_file: Path, master_directory: Path, video_cache_file: Path, ytdl_options: dict):
-    if not playlist_utils.is_playlist_valid(playlist_file):
-        return
-
+def main(playlist_file: Path, master_directory: Path, video_cache_file: Path, ytdl: dict):
     if not master_directory.is_dir():
         return
 
@@ -534,6 +398,6 @@ def main(playlist_file: Path, master_directory: Path, video_cache_file: Path, yt
         playlist_file=playlist_file,
         master_directory=master_directory,
         video_cache_file=video_cache_file,
-        ytdl_options=ytdl_options
+        ytdl=ytdl
     )
     app.run()
