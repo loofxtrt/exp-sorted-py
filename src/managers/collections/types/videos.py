@@ -46,9 +46,11 @@ def insert_youtube_video(
                 cache_file=cache_file
             )
 
-    manager.insert_entry_service(
+    inserted = manager.insert_entry_service(
         collection=collection,
         resolvable_id=video_id,
         media_type=_MEDIA_TYPE,
-        service_name='youtube'
+        service_name='youtube',
+        return_generated_id=True
     )
+    return inserted

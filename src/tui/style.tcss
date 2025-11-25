@@ -119,22 +119,20 @@ Input:focus {
 
 
 Toast {
-    padding: 0;
+    padding: 0 1;
+    background: transparent;
 }
 
 Toast.-warning {
-    border-left: outer $yellow;
-    background: $yellow 10%
+    border: round $yellow;
 }
 
 Toast.-error {
-    border-left: outer $red; /* borda parecida com a padrão */
-    background: $red 10%
+    border: round $red;
 }
 
 Toast.-information {
-    border-left: outer $green;
-    background: $green 10%;
+    border: round $green;
 }
 
 

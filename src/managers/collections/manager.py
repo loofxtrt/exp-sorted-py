@@ -11,6 +11,8 @@ from ...utils import generic, json_io
 from ...managers import settings
 
 class CollectionAlreadyExists(Exception): pass
+class InvalidCollectionData(Exception): pass
+class EntryNotFound(Exception): pass
 
 def create_collection(
     title: str,
@@ -98,7 +100,9 @@ def insert_entry_generic(
         'type': media_type,
         'url': url
     }
-    handle_entry_insertion(collection=collection, entry_data=data)
+    
+    inserted = handle_entry_insertion(collection=collection, entry_data=data)
+    return inserted
 
 def insert_entry_service(
     collection: Path,
@@ -113,13 +117,15 @@ def insert_entry_service(
             'service-name': service_name 
         }
     }
-    handle_entry_insertion(collection=collection, entry_data=data)
+
+    inserted = handle_entry_insertion(collection=collection, entry_data=data)
+    return inserted
 
 def handle_entry_insertion(
     collection: Path,
     entry_data: dict,
-    presence_verification: bool = True
-    ):
+    presence_verification: bool = True,
+    ) -> dict | None:
     """
     adiciona uma nova entrada dentro da collection informada
 
@@ -150,6 +156,10 @@ def handle_entry_insertion(
     utils.write_file(collection, collection_data)
 
     logger.success(f'entrada {entry_data} adicionada em {collection}')
+
+    # retorna os dados que acabou de criar pra função que a chamou
+    # pode ser usado em situações onde o chamador tem que saber o id da entry, por exemplo
+    return entry_data
 
 def remove_entry(collection: Path, entry_id: str):
     """
@@ -187,9 +197,10 @@ def move_entry(
     dest_collection: Path,
     entry_id: str,
     presence_verification: bool = True
-    ):
+    ) -> bool:
     """
     transfere uma entrada entre duas collections
+    retorna um bool pra indicar se a moção foi bem ou mal sucedida
 
     args:
         src_collection:
@@ -205,28 +216,31 @@ def move_entry(
             impede de mover se a entrada já existir no destino
     """
 
+    if src_collection == dest_collection:
+        logger.info('as collections de destino e origem são as mesmas')
+        return False
+
     # obter os dados das collections
     data_src = utils.read_file(src_collection)
     data_dest = utils.read_file(dest_collection)
     if not data_src or not data_dest:
-        logger.error('alguns dados são inválidos')
-        return
+        raise InvalidCollectionData(f'One or both of the collections are invalid:\n{src_collection}\n{dest_collection}')
 
     # obter a entrada em específico pelo id dela
     entry = utils.get_entry_data_by_id(data_src, entry_id)
     if not entry:
-        logger.info(f'entrada {entry_id} não encontrada em {src_collection}')
-        return
+        raise EntryNotFound(f'{entry_id} not found in {src_collection}')
     if presence_verification:
         if utils.is_entry_present(data_dest, entry):
             logger.info('o item já está presente na collection de destino')
-            return
+            return False
 
     # mover a entrada de uma collection pra outra
     handle_entry_insertion(dest_collection, entry, presence_verification)
     remove_entry(src_collection, entry_id)
         
-    logger.info(f'entrada {entry_id} movida de {src_collection} para {dest_collection}')
+    logger.success(f'entrada {entry_id} movida de {src_collection} para {dest_collection}')
+    return True 
 
 def delete_path_permanently(path: Path):
     """

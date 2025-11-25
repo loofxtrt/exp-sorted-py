@@ -30,10 +30,14 @@ def update_collection_table(
 
     # adicionar as entradas, lendo a collection e obtendo os dados pelo cache
     for e in collection_data.get('entries'):
-        #entry_id = e.get('id')
+        entry_id = e.get('id')
+
         service_metadata = e.get('service-metadata')
-        entry_id = service_metadata.get('resolvable-id')
-        data = cache.get_cached_entry_data(resolvable_id=entry_id, cache_file=cache_file)
+        resolvable_id = service_metadata.get('resolvable-id')
+
+        data = cache.get_cached_entry_data(resolvable_id=resolvable_id, cache_file=cache_file)
+        if not data:
+            continue
 
         insert_entry_row(
             entry_data=data,

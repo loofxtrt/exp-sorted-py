@@ -9,7 +9,7 @@ from .managers import cache, settings
 @click.command(help='Inicia a TUI para visualizar e editar uma playlist')
 def tui_pl():
     tui.main(
-        master_directory=Path('/mnt/seagate/authoral-software/sorted'),
+        master_directory=Path('./testei'),
         playlist_file=Path('./testei/chinelo.json'),
         video_cache_file=_video_cache_file,
         ytdl=_ytdl

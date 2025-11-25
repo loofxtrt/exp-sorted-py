@@ -12,9 +12,9 @@ import pyperclip
 from ..managers import cache, settings
 from ..managers.collections import manager as collection_manager, utils as collection_utils
 from ..managers.collections.types import videos
-from ..utils import json_io, formatting
+from ..utils import json_io, formatting, clipboard
 from ..services import youtube
-from . import structure
+from . import structure, controller
 
 def get_video_title(video_id: str) -> str | None:
     # obtém o título do vídeo
@@ -164,7 +164,7 @@ class PlaylistView(App):
         self.playlist_file = selected_file
         self.playlist_data = playlist_data
         self.selected_row_keys = []
-        table.update_collection_table(
+        structure.table.update_collection_table(
             table=self.table,
             collection_data=self.playlist_data,
             cache_file=self.video_cache_file
@@ -183,55 +183,15 @@ class PlaylistView(App):
             """
             mover os vídeos selecionados pro endereço definido ao pressionar a tecla
             """
+            dest = Path(self.destination_input.value)
 
-            destination = Path(self.destination_input.value)
-
-            # se a playlist de destino for a mesma que a playlist atual
-            if destination == self.playlist_file:
-                self.notify(message='Destination is the same as the current playlist', severity='information')
-                return
-
-            # se a quantidade de vídeos selecionados seja válida, maior que 0
-            if not len(self.selected_row_keys) > 0:
-                self.notify(message='No videos selected', severity='warning')
-                return
-
-            # mover cada vídeo pra playlist de destino
-            # a variável de contagem serve pra logging/notificações
-            # o título do vídeo só é obtido em caso de erro pra evitar i/o
-            moved_count = 0
-            
-            for row_key in self.selected_row_keys:
-                # moção real do vídeo
-                video_id = row_key.value # o id tá dentro da row_key, ele não é a row_key em si
-
-                try:
-                    collection_manager.move_entry(
-                        src_collection=self.playlist_file,
-                        dest_collection=destination,
-                        entry_id=video_id
-                    )
-
-                    self.selected_row_keys.remove(row_key) # remove da lista de selecionados
-                    self.table.remove_row(row_key) # remove da tabela visual
-
-                    moved_count += 1
-                except manager.InvalidPlaylist as err:
-                    # essa chamada não falha por falta da playlist de destino (a flag de criação foi passada como true)
-                    # então o problema só pode ser com a playlist de origem
-                    self.notify(message=f'Something is wrong with the origin playlist: {err}', severity='error')
-                except manager.EntryAlreadyExists:
-                    title = self.get_video_title(video_id)
-                    self.notify(message=f'Destination playlist already contains {title} ({video_id})', severity='information')
-                except manager.EntryNotFound:
-                    title = self.get_video_title(video_id)
-                    self.notify(message=f'Could not find {title} ({video_id}) in the origin playlist', severity='error')
-
-            if moved_count > 0:
-                # usar plural se for mais de um vídeo e singular se for só um
-                handle_plural = 'video' if moved_count == 1 else 'videos'
-
-                self.notify(message=f'Sucessfully moved {moved_count} {handle_plural}')
+            controller.move_entries(
+                app=self,
+                src_collection=self.playlist_file,
+                dest_collection=dest,
+                selected_row_keys=self.selected_row_keys,
+                collection_table=self.table
+            )
 
         if event.key == 'd':
             """
@@ -292,14 +252,15 @@ class PlaylistView(App):
             # inserir o vídeo na playlist atual
             # e também atualizar na tabela
             try:
-                videos.insert_youtube_video(
+                inserted = videos.insert_youtube_video(
                     collection=self.playlist_file,
                     ytdl=self.ytdl
                 )
 
+                entry_id = inserted.get('id')
                 table.insert_entry_row(
                     entry_data=video_data,
-                    entry_id=video_id,
+                    entry_id=entry_id,
                     table=self.table
                 )
 
@@ -321,41 +282,8 @@ class PlaylistView(App):
             """
             copia a url do primeiro vídeo selecionado da lista pra área de transferência do sistema
             """
-
-            # primeiro verifica se o sistema possui suporte à clipboard
-            # obtém o nome do sistema e verifica o software que ele usa pra esse tipo de ação
-            # no linux pode variar, mas no windows e macos geralmente são sempre os mesmos
-            system = platform.system().lower()
-
-            if system == 'linux':
-                if (shutil.which('xclip') is not None or
-                    shutil.which('xsel') is not None or
-                    shutil.which('wl-copy') is not None):
-                    pass
-                else:
-                    self.notify(
-                        message=f"""Could not find clipboard support on system {system}. Expected xclip, xsel or wl-copy\n
-                        If you're using Wayland, install wl-clipboard. If you're using X11, install xclip or xsel""",
-                        severity='error'
-                    )
-                    return
-            elif system == 'windows':
-                if shutil.which('clip') is None:
-                    self.notify(
-                        message=f'Could not find clipboard support on system {system}. Expected clip',
-                        severity='error'
-                    )
-                    return
-            elif system == 'darwin': # macos
-                if shutil.which('pbcopy') is None:
-                    self.notify(
-                        message=f'Could not find clipboard support on system {system}. Expected pbcopy',
-                        severity='error'
-                    )
-                    return
-            else:
-                self.notify(message='Unknown operational system', severity='error')
-                return
+            if not clipboard.has_clipboard_support():
+                self.notify(message='No clipboard support found', severity='error')
 
             if not len(self.selected_row_keys) > 0:
                 self.notify(message='No videos selected', severity='warning')
