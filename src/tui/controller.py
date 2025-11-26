@@ -4,6 +4,7 @@ from textual.app import App
 from textual.widgets import DataTable
 
 from ..managers.collections import manager
+from .structure import table
 
 def move_entries(
     app: App,

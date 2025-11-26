@@ -24,6 +24,18 @@ def get_video_title(video_id: str) -> str | None:
 
     return title
 
+def toggle_picking_state(app: App, state: bool):
+    """
+    toggle do estado de picking  
+    """
+
+    app.picking_state = state
+
+    if app.picking_state:
+        app.notify('Picking mode enabled', severity='information')
+    else:
+        app.notify('Picking mode disabled', severity='information')
+
 class PlaylistView(App):
     # cores da logo
     #ffc971 amarelo
@@ -36,8 +48,6 @@ class PlaylistView(App):
         ('^q', 'quit', 'Quit'),
         ('m', 'move', 'Move selected'),
         ('d', 'delete', 'Delete selected'),
-        ('s', 'set', 'Current as destination'),
-        ('p', 'pick', 'Toggle picking'),
         ('i', 'insert', 'Insert video'),
         ('u', 'url', 'Copy selected URL'),
         ('c', 'clear', 'Clear inputs')
@@ -79,9 +89,9 @@ class PlaylistView(App):
         with Horizontal():
             # abrir a file tree no diretório principal
             self.file_tree = DirectoryTree(str(self.master_directory))
-            self.file_tree.ICON_FILE = ''
-            self.file_tree.ICON_NODE = '󰉋 '
-            self.file_tree.ICON_NODE_EXPANDED = '󰝰 '
+            self.file_tree.ICON_FILE = '󰪶 ' # nf-md
+            self.file_tree.ICON_NODE = '󰉖 '
+            self.file_tree.ICON_NODE_EXPANDED = '󰷏 '
             yield self.file_tree
 
             # conteúdo principal
@@ -90,17 +100,15 @@ class PlaylistView(App):
                 with Vertical().add_class('plain-container'):
                     # url de um novo vídeo a ser adicionado a playlist
                     insert_container, self.video_input = structure.input.build(
-                        label_contents='Insert video',
+                        label_contents='󰃃 Insert entry',
                         placeholder_contents='https://www.youtube.com/watch?v=erb4n8PW2qw'
                     )
                     yield insert_container
-
-                    # destino pra onde os vídeos devem ir ao clicar em 'move'
-                    destination_container, self.destination_input = structure.input.build(
-                        label_contents='Moving destination',
-                        placeholder_contents='~/playlists/destination.json'
-                    )
-                    yield destination_container
+                    #󰍉 Search entry
+                    #󰒿 Sort entries by
+                    #󰧧 Delete collection
+                    #󱇨 Edit collection
+                    #󱀱 Move collection
                 
                 # tabela da playlist
                 self.table = DataTable(cursor_type='row')
@@ -157,10 +165,23 @@ class PlaylistView(App):
 
         # tomar a seleção como moving destination caso o estado de picking esteja ativo
         if self.picking_state:
-            self.destination_input.value = str(selected_file)
+            source = self.playlist_file
+            destination = selected_file
+
+            controller.move_entries(
+                app=self,
+                src_collection=source,
+                dest_collection=destination,
+                selected_row_keys=self.selected_row_keys,
+                collection_table=self.table
+            )
+            
+            toggle_picking_state(self, False)
+            destination = None
             return
 
         # selecionar normalmente caso nenhum estado especial esteja ativo
+        # atualizar a tabela e zerar os dados
         self.playlist_file = selected_file
         self.playlist_data = playlist_data
         self.selected_row_keys = []
@@ -168,7 +189,7 @@ class PlaylistView(App):
             table=self.table,
             collection_data=self.playlist_data,
             cache_file=self.video_cache_file
-            )
+        )
 
         # também atualizar o header
         structure.header.update(
@@ -183,15 +204,8 @@ class PlaylistView(App):
             """
             mover os vídeos selecionados pro endereço definido ao pressionar a tecla
             """
-            dest = Path(self.destination_input.value)
-
-            controller.move_entries(
-                app=self,
-                src_collection=self.playlist_file,
-                dest_collection=dest,
-                selected_row_keys=self.selected_row_keys,
-                collection_table=self.table
-            )
+            if not self.picking_state:
+                toggle_picking_state(self, True)
 
         if event.key == 'd':
             """
@@ -213,15 +227,6 @@ class PlaylistView(App):
                     collection=self.playlist_file,
                     entry_id=video_id
                 )
-        
-        if event.key == 's':
-            """
-            define a playlist atual como o destino de movimento dos vídeos  
-            usada pra não precisar digitar o endereço do destino manualmente
-            """
-
-            self.destination_input.value = str(self.playlist_file)
-            self.notify(message='Moving destination updated', severity='information')
         
         if event.key == 'i':
             """
@@ -276,7 +281,6 @@ class PlaylistView(App):
             """
 
             self.video_input.value = ''
-            self.destination_input.value = ''
         
         if event.key == 'u':
             """
@@ -304,19 +308,6 @@ class PlaylistView(App):
                 self.notify(message=f'URL copied {video_url}', severity='information')
             except Exception as err:
                 self.notify(message=f'Something went wrong while copying the URL: {err}', severity='error')
-        
-        if event.key == 'p':
-            """
-            toggle do estado de picking  
-            não possui lógica interna porque a file tree é a responsável por isso
-            """
-
-            self.picking_state = not self.picking_state
-
-            if self.picking_state:
-                self.notify('Picking mode enabled', severity='information')
-            else:
-                self.notify('Picking mode disabled', severity='information')
 
 def main(playlist_file: Path, master_directory: Path, video_cache_file: Path, ytdl: dict):
     if not master_directory.is_dir():
