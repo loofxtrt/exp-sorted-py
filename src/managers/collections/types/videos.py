@@ -29,6 +29,9 @@ def insert_youtube_video(
     if video_data is None:
         video_data = youtube.extract_youtube_video_info(url, ytdl)
         video_id = video_data.pop('id')
+
+        if not video_id:
+            return
         
         # inserir ou atualizar os dados desse vídeo no cache
         #
@@ -42,6 +45,7 @@ def insert_youtube_video(
         if update_existing_cached or not video_cached:
             cache.insert_entry_on_cache(
                 resolvable_id=video_id,
+                media_type=_MEDIA_TYPE,
                 entry_data=video_data,
                 cache_file=cache_file
             )
@@ -49,7 +53,6 @@ def insert_youtube_video(
     inserted = manager.insert_entry_service(
         collection=collection,
         resolvable_id=video_id,
-        media_type=_MEDIA_TYPE,
         service_name='youtube',
         return_generated_id=True
     )

@@ -36,6 +36,30 @@ def toggle_picking_state(app: App, state: bool):
     else:
         app.notify('Picking mode disabled', severity='information')
 
+def update_header(app: App):
+    structure.header.update(
+        collection_file=app.playlist_file,
+        collection_data=app.playlist_data,
+        label_title=app.header_title,
+        label_entry_count=app.header_video_count,
+        label_type=app.header_type
+    )
+
+# from textual.widgets.tree import TreeNode
+# class IconizedDirectoryTree(DirectoryTree):
+#     def render_label(self, node: TreeNode, base_style, guide_style) -> Text:
+#         path = node.data
+#         
+#         if not path.is_dir():
+#             return
+#         collection = collection_utils.read_file(path)
+#         if not collection:
+#             return
+#         if collection.get('type') == 'posts':
+#             icon = "󰯗 "
+#         
+#         return Text(icon + name, style=base_style)
+
 class PlaylistView(App):
     # cores da logo
     #ffc971 amarelo
@@ -48,7 +72,7 @@ class PlaylistView(App):
         ('^q', 'quit', 'Quit'),
         ('m', 'move', 'Move selected'),
         ('d', 'delete', 'Delete selected'),
-        ('i', 'insert', 'Insert video'),
+        ('i', 'insert', 'Insert entry'),
         ('u', 'url', 'Copy selected URL'),
         ('c', 'clear', 'Clear inputs')
     ]
@@ -74,17 +98,15 @@ class PlaylistView(App):
         self.header = Vertical().add_class('plain-container')
         with self.header:
             self.header_title = Label()
+            self.header_type = Label()
             self.header_video_count = Label()
-            
+
+            yield Label('󰪶 Viewing a collection')
             yield self.header_title
+            yield self.header_type
             yield self.header_video_count
-            
-            structure.header.update(
-                collection_file=self.playlist_file,
-                collection_data=self.playlist_data,
-                label_title=self.header_title,
-                label_entry_count=self.header_video_count
-            )
+        
+        update_header(self)
 
         with Horizontal():
             # abrir a file tree no diretório principal
@@ -163,41 +185,40 @@ class PlaylistView(App):
         selected_file = event.path
         playlist_data = collection_utils.read_file(selected_file)
 
-        # tomar a seleção como moving destination caso o estado de picking esteja ativo
+        # se estiver no estado de moção de entradas, a próxima collection a ser focada na file tree
+        # vira o destino daquela moção. após a moção, o status e dados são limpos,
+        # a menos que a moção falhe, aí os dados (tipo o destino e lista de selecionados) continuam
         if self.picking_state:
             source = self.playlist_file
             destination = selected_file
 
-            controller.move_entries(
+            status = controller.move_entries(
                 app=self,
                 src_collection=source,
                 dest_collection=destination,
                 selected_row_keys=self.selected_row_keys,
                 collection_table=self.table
             )
+            if not status:
+                return
             
             toggle_picking_state(self, False)
             destination = None
             return
 
         # selecionar normalmente caso nenhum estado especial esteja ativo
-        # atualizar a tabela e zerar os dados
+        # atualizar a tabela, o header, e zerar os dados
         self.playlist_file = selected_file
         self.playlist_data = playlist_data
         self.selected_row_keys = []
+
         structure.table.update_collection_table(
             table=self.table,
             collection_data=self.playlist_data,
             cache_file=self.video_cache_file
         )
 
-        # também atualizar o header
-        structure.header.update(
-            collection_file=self.playlist_file,
-            collection_data=self.playlist_data,
-            label_title=self.header_title,
-            label_entry_count=self.header_video_count
-        )
+        update_header(self)
 
     def on_key(self, event):
         if event.key == 'm':
@@ -235,7 +256,7 @@ class PlaylistView(App):
 
             video_url = self.video_input.value
             if video_url.strip() == '':
-                self.notify(message='No video URL provided', severity='warning')
+                self.notify(message='No URL provided', severity='warning')
                 return
 
             video_id = youtube.handle_video_id_extraction(video_url, self.ytdl_options)

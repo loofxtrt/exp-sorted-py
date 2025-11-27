@@ -11,11 +11,13 @@ from ...utils import generic, json_io
 from ...managers import settings
 
 class CollectionAlreadyExists(Exception): pass
+class MismatchedCollectionType(Exception): pass # tentar adicionar uma entrada com tipo não corresponde a collection
 class InvalidCollectionData(Exception): pass
 class EntryNotFound(Exception): pass
 
 def create_collection(
     title: str,
+    media_type: str,
     output_directory: Path,
     description: str | None = None,
     force_overwrite: bool = False,
@@ -39,6 +41,10 @@ def create_collection(
     args:
         title:
             nome do arquivo, usado como título da collection
+        
+        media_type:
+            tipo do conteúdo que a collection comporta, como vídeos, perfis, comunidades etc.
+            se for um tipo suportado, pode ter visualização mais rica
         
         output_directory:
             diretório onde a collection será criada
@@ -83,6 +89,7 @@ def create_collection(
     data = {
         'id': generic.generate_random_id(),
         'created-at': generic.get_iso_datetime(),
+        'type': media_type,
         'entries': []
     }
     if description is not None:
@@ -96,8 +103,10 @@ def insert_entry_generic(
     media_type: str,
     url: str
     ):
+    if not utils.file_collection_type_matches(media_type, collection):
+        raise MismatchedCollectionType()
+    
     data = {
-        'type': media_type,
         'url': url
     }
     
@@ -110,8 +119,10 @@ def insert_entry_service(
     resolvable_id: str,
     service_name: str
     ):
+    if not utils.file_collection_type_matches(media_type, collection):
+        raise MismatchedCollectionType()
+
     data = {
-        'type': media_type,
         'service-metadata': {
             'resolvable-id': resolvable_id,
             'service-name': service_name 
@@ -128,6 +139,10 @@ def handle_entry_insertion(
     ) -> dict | None:
     """
     adiciona uma nova entrada dentro da collection informada
+    
+    IMPORTANTE:
+        essa função assume que o chamador sabe o que está fazendo
+        ela não leva em consideração o 'type' da collection
 
     args:
         collection:
@@ -235,6 +250,12 @@ def move_entry(
             logger.info('o item já está presente na collection de destino')
             return False
 
+    # só continuar com a moção se o tipo da collection original
+    # for compatível com o tipo da do destino
+    media_type = data_src.get('type')
+    if not utils.data_collection_type_matches(media_type, data_dest):
+        raise MismatchedCollectionType()
+
     # mover a entrada de uma collection pra outra
     handle_entry_insertion(dest_collection, entry, presence_verification)
     remove_entry(src_collection, entry_id)
@@ -299,6 +320,7 @@ if __name__ == '__main__':
     try:
         create_collection(
             title='leros',
+            media_type='videos',
             output_directory=Path('./testei'),
             description='sarelos'
         )
@@ -308,6 +330,16 @@ if __name__ == '__main__':
     try:
         create_collection(
             title='chinelo',
+            media_type='videos',
+            output_directory=Path('./testei')
+        )
+    except CollectionAlreadyExists:
+        pass
+
+    try:
+        create_collection(
+            title='potacio',
+            media_type='posts',
             output_directory=Path('./testei')
         )
     except CollectionAlreadyExists:
@@ -330,8 +362,8 @@ if __name__ == '__main__':
     #    url=url,
     #    ytdl=ytdl
     #)
-    move_entry(
-        src_collection=this_coll,
-        dest_collection=chinelo_coll,
-        entry_id='uxPQcuH3'
-    )
+    #move_entry(
+    #    src_collection=this_coll,
+    #    dest_collection=chinelo_coll,
+    #    entry_id='uxPQcuH3'
+    #)

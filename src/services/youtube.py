@@ -87,7 +87,7 @@ def extract_video_info(url: str, ytdl: YoutubeDL) -> dict | None :
     view_count = info.get('view_count')
     duration = info.get('duration', 0) # segundos. 0 é fallback se o campo não estiver presente
     thumbnail = info.get('thumbnail')
-    description = info.get('description')
+    #description = info.get('description')
     
     # estruturar os dados obtidos em um objeto json
     video_data = {
@@ -97,7 +97,7 @@ def extract_video_info(url: str, ytdl: YoutubeDL) -> dict | None :
         'uploader': uploader,
         'view_count': view_count,
         'duration': duration,
-        'description': description,
+        #'description': description,
         'thumbnail': thumbnail,
     }
 

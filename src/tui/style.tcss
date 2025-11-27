@@ -17,12 +17,9 @@ $red: #f38ba8;
 $border: round $accent-primary 30%;
 
 
-
 Screen {
     background: $black;
 }
-
-
 
 .plain-container {
     border: $border;
@@ -116,6 +113,19 @@ Input:focus {
     background: $accent-primary 30%;
 }
 
+.input-label {
+    background: transparent;
+
+    color: $white;
+    /*text-style: bold;*/
+
+    padding: 0 1;
+}
+
+.input-container {
+    height: auto; /* faz os containers não se expandirem desnecessariamente */
+}
+
 
 
 Toast {
@@ -133,48 +143,4 @@ Toast.-error {
 
 Toast.-information {
     border: round $green;
-}
-
-
-
-.input-warning {
-    background: $yellow 10%;
-}
-
-.input-warning:focus {
-    background: $yellow 30%;
-}
-
-.input-error {
-    background: $red 10%;
-}
-
-.input-error:focus {
-    background: $red 30%;
-}
-
-.text-warning {
-    color: $yellow;
-}
-
-.text-error {
-    color: $red;
-}
-
-.text-success {
-    color: $green;
-}
-
-.input-label {
-    background: transparent;
-
-    color: $white;
-    text-style: bold;
-
-    padding: 0 1;
-}
-
-.input-container {
-    border: $border;
-    height: auto; /* faz os containers não se expandirem desnecessariamente */
 }

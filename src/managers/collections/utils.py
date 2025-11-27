@@ -133,6 +133,12 @@ def get_entry_data_by_id(collection_data: dict, entry_id: str) -> dict | None:
     
     return None
 
+def data_collection_type_matches(media_type: str, collection_data: dict) -> bool:
+    return media_type == collection_data.get('type')
+
+def file_collection_type_matches(media_type: str, collection_file: Path) -> bool:
+    data = read_file(collection_file)
+    return data_collection_type_matches(media_type, data)
 
 def read_file(file: Path) -> dict | None:
     """

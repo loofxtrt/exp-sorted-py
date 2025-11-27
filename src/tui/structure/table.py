@@ -6,6 +6,17 @@ from textual.containers import Vertical, Horizontal
 from ...utils import formatting
 from ...managers import cache
 
+## posts
+# Title
+# Uploader
+# Score
+# Upload date
+
+## generic
+# Favicon
+# URL
+# Title
+
 def update_collection_table(
     table: DataTable,
     collection_data: dict,

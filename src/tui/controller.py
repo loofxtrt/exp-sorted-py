@@ -12,7 +12,7 @@ def move_entries(
     dest_collection: Path,
     selected_row_keys: list,
     collection_table: DataTable
-    ):
+    ) -> bool:
     if dest_collection == src_collection:
         app.notify(message='Destination is the same as the current playlist', severity='information')
         return
@@ -36,13 +36,16 @@ def move_entries(
             )
             if not status:
                 app.notify('Something went wrong while moving entries', severity='error')
-                return
+                return False
         except manager.InvalidCollectionData:
             app.notify('Some collection for the moving action is invalid', severity='error')
-            return
+            return False
         except manager.EntryNotFound:
             app.notify('Entry being moved was not found', severity='error')
-            return
+            return False
+        except manager.MismatchedCollectionType:
+            app.notify('Destination and source collection types do not match', severity='error')
+            return False
 
         selected_row_keys.remove(row_key) # remove da lista de selecionados
         collection_table.remove_row(row_key) # remove da tabela visual
@@ -53,3 +56,5 @@ def move_entries(
         # usar plural se for mais de um vídeo e singular se for só um
         handle_plural = 'video' if moved_count == 1 else 'videos'
         app.notify(message=f'Sucessfully moved {moved_count} {handle_plural}')
+    
+    return True
