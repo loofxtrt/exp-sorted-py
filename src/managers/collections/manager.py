@@ -315,55 +315,55 @@ def path_to_trash(path: Path, custom_trash: Path | None = None):
         custom_trash.mkdir(parents=True, exist_ok=True)
         shutil.move(src=path, dst=custom_trash)
 
-# TESTES
-if __name__ == '__main__':
-    try:
-        create_collection(
-            title='leros',
-            media_type='videos',
-            output_directory=Path('./testei'),
-            description='sarelos'
-        )
-    except CollectionAlreadyExists:
-        pass
+# # TESTES
+# if __name__ == '__main__':
+#     try:
+#         create_collection(
+#             title='leros',
+#             media_type='videos',
+#             output_directory=Path('./testei'),
+#             description='sarelos'
+#         )
+#     except CollectionAlreadyExists:
+#         pass
 
-    try:
-        create_collection(
-            title='chinelo',
-            media_type='videos',
-            output_directory=Path('./testei')
-        )
-    except CollectionAlreadyExists:
-        pass
+#     try:
+#         create_collection(
+#             title='chinelo',
+#             media_type='videos',
+#             output_directory=Path('./testei')
+#         )
+#     except CollectionAlreadyExists:
+#         pass
 
-    try:
-        create_collection(
-            title='potacio',
-            media_type='posts',
-            output_directory=Path('./testei')
-        )
-    except CollectionAlreadyExists:
-        pass
+#     try:
+#         create_collection(
+#             title='potacio',
+#             media_type='posts',
+#             output_directory=Path('./testei')
+#         )
+#     except CollectionAlreadyExists:
+#         pass
 
-    this_coll = Path('./testei/leros.json')
-    chinelo_coll = Path('./testei/chinelo.json')
+#     this_coll = Path('./testei/leros.json')
+#     chinelo_coll = Path('./testei/chinelo.json')
     
-    from .types import videos
-    from ...services import youtube#, reddit
+#     from .types import videos
+#     from ...services import youtube#, reddit
 
-    ytdl = youtube.instance_ytdl()
+#     ytdl = youtube.instance_ytdl()
 
-    url = 'https://www.youtube.com/watch?v=erb4n8PW2qw'
+#     url = 'https://www.youtube.com/watch?v=erb4n8PW2qw'
 
-    #remove_entry(this_coll, 'QGtnv_pc')
+#     #remove_entry(this_coll, 'QGtnv_pc')
 
-    #videos.insert_youtube_video(
-    #    collection=this_coll,
-    #    url=url,
-    #    ytdl=ytdl
-    #)
-    #move_entry(
-    #    src_collection=this_coll,
-    #    dest_collection=chinelo_coll,
-    #    entry_id='uxPQcuH3'
-    #)
+#     #videos.insert_youtube_video(
+#     #    collection=this_coll,
+#     #    url=url,
+#     #    ytdl=ytdl
+#     #)
+#     #move_entry(
+#     #    src_collection=this_coll,
+#     #    dest_collection=chinelo_coll,
+#     #    entry_id='uxPQcuH3'
+#     #)

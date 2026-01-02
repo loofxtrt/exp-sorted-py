@@ -17,6 +17,8 @@ from ...managers import cache
 # URL
 # Title
 
+def video_table():
+
 def update_collection_table(
     table: DataTable,
     collection_data: dict,

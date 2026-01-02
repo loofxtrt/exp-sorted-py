@@ -1,7 +1,28 @@
 from pathlib import Path
+from dataclasses import dataclass
 
 from ... import logger
 from ...utils import json_io
+
+@dataclass
+class Video:
+    title: str
+    upload_date: str
+    uploader: str
+    view_count: int
+    duration: int
+    thumbnail: str
+
+@dataclass
+class ServiceMetadata:
+    service_name: str
+    resolvable_id: str
+
+@dataclass
+class Entry:
+    service_metadata: ServiceMetadata
+    id: str
+    inserted_at: str
 
 def get_file_from_id(collection_id: str, base_directory: Path) -> None | Path:
     if not base_directory.is_dir():
@@ -114,7 +135,7 @@ def is_entry_present(
 
     return False
 
-def get_entry_data_by_id(collection_data: dict, entry_id: str) -> dict | None:
+def get_entry_by_id(collection_data: dict, entry_id: str) -> Entry | None:
     """
     obtém os dados de uma entrada pelo id dela
 
@@ -126,12 +147,31 @@ def get_entry_data_by_id(collection_data: dict, entry_id: str) -> dict | None:
             o id da entrada que possui os dados a serem retornados
     """
 
-    entries = collection_data.get('entries')
+    entries = get_entries(collection_data)
     for e in entries:
-        if e.get('id') == entry_id:
+        if e.id == entry_id:
             return e
     
     return None
+
+def get_entries(collection_data: dict) -> list[Entry]:
+    raw_entries = collection_data.get('entries')
+    converted = []
+    for e in raw_entries:
+        sm = e.get('service-metadata')
+
+        entry = Entry(
+            service_metadata=ServiceMetadata(
+                service_name=sm.get('service-name'),
+                resolvable_id=sm.get('resolvable-id')
+            ),
+            id=e.get('id'),
+            inserted_at=e.get('inserted-at')
+        )
+
+        converted.append(entry)
+
+    return converted
 
 def data_collection_type_matches(media_type: str, collection_data: dict) -> bool:
     return media_type == collection_data.get('type')

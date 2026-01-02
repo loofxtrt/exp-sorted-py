@@ -4,8 +4,9 @@ from yt_dlp import YoutubeDL
 
 from .. import logger
 from ..managers import settings
+from ..managers.collections.utils import Video
 
-def instance_ytdl(options: dict | None = None):
+def instance_ytdl(options: dict | None = None) -> YoutubeDL:
     """
     se o ytdl for ser usado duas vezes numa mesma função, a instância retornada
     por essa função pode ser atribuída a uma variável pra evitar a recriação da api
@@ -79,26 +80,35 @@ def extract_video_info(url: str, ytdl: YoutubeDL) -> dict | None :
     except Exception as err:
         logger.error(f'erro ao tentar extrair os dados do vídeo {url}: {err}')
         return None
-
-    video_id = info.get('id') # dígitos que aparecem depois de watch?v= em urls de vídeos
-    title = info.get('title')
-    upload_date = info.get('upload_date') # yyyymmdd
-    uploader = info.get('uploader')
-    view_count = info.get('view_count')
-    duration = info.get('duration', 0) # segundos. 0 é fallback se o campo não estiver presente
-    thumbnail = info.get('thumbnail')
-    #description = info.get('description')
     
-    # estruturar os dados obtidos em um objeto json
-    video_data = {
-        'id': video_id,
-        'title': title,
-        'upload_date': upload_date,
-        'uploader': uploader,
-        'view_count': view_count,
-        'duration': duration,
-        #'description': description,
-        'thumbnail': thumbnail,
+    # estruturar os dados obtidos
+    return {
+        # 'video_id': info.get('id') # dígitos que aparecem depois de watch?v= em urls de vídeos
+        'title': info.get('title'),
+        'upload_date': info.get('upload_date'), # yyyymmdd
+        'uploader': info.get('uploader'),
+        'view_count': info.get('view_count'),
+        'duration': info.get('duration', 0), # segundos. 0 é fallback se o campo não estiver presente
+        'thumbnail': info.get('thumbnail')
     }
 
-    return video_data
+def video_from_dict(data: dict) -> Video:
+    return Video(
+        # video_id = data.get('id') # dígitos que aparecem depois de watch?v= em urls de vídeos
+        title = data.get('title'),
+        upload_date = data.get('upload_date'), # yyyymmdd
+        uploader = data.get('uploader'),
+        view_count = data.get('view_count'),
+        duration = data.get('duration', 0), # segundos. 0 é fallback se o campo não estiver presente
+        thumbnail = data.get('thumbnail')
+    )
+
+def video_to_dict(video: Video) -> Video:
+    return {
+        'title': video.title,
+        'upload_date': video.upload_date,
+        'uploader': video.uploader,
+        'view_count': video.view_count,
+        'duration': video.duration,
+        'thumbnail': video.thumbnail
+    }

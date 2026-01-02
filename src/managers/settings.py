@@ -4,14 +4,15 @@ import json
 from .. import logger
 from ..utils import generic
 
-SETTINGS_DIRECTORY = Path.home() / '.config' / 'sorted' # INALTERÁVEL
-SETTINGS_FILE = SETTINGS_DIRECTORY / 'settings.json' # INALTERÁVEL
+# VALORES INALTERÁVEIS
+SETTINGS_DIRECTORY = Path.home() / '.config' / 'sorted'
+SETTINGS_FILE = SETTINGS_DIRECTORY / 'settings.json'
+CACHE_DIRECTORY = c_dir = Path.home() / '.cache' / 'sorted'
 
 # IMPORTANTE
 # nas configurações e em jsons no geral, se usa kebab-case, não snake_case
 # isso só não se aplica a algumas configs do ytdl, que precisam usar underline em vez de hífen
 DEFAULTS = {
-    'cache-directory': str(SETTINGS_DIRECTORY / 'cache'),
     'ytdl-options': {
         'quiet': True,
         'skip_download': True,
@@ -39,40 +40,6 @@ def _load():
 
             with SETTINGS_FILE.open('w', encoding='utf-8') as f:
                 json.dump(_data, f, indent=4, ensure_ascii=False)
-
-def get_cache_file(service: str, section: str, ensure_creation: bool = True) -> Path | None:
-    """
-    args:
-        service:
-            ex: youtube
-        
-        section:
-            ex: videos
-    """
-    
-    c_dir = get('cache-directory')
-    if not c_dir:
-        logger.error(f'erro ao obter o diretório de cache: {c_dir}')
-        return
-
-    c_dir = Path(c_dir)
-
-    file = c_dir / service / section
-    file = generic.normalize_json_file(file)
-    
-    if not file.exists():
-        if not ensure_creation:
-            logger.error(f'a seção {section} é inválida para o cache de {service}')
-            logger.error(f'o arquivo de cache não existe: {file}')
-            return
-        else:
-            # criar o arquivo se assim especificado
-            file.parent.mkdir(exist_ok=True, parents=True)
-            file.touch()
-            
-            logger.success(f'arquivo de cache criado: {file}')
-
-    return file
 
 def get(key: str):
     global _data
