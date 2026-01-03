@@ -20,6 +20,8 @@ from ..services import youtube
 # - [x] remove
 # - [x] move
 # - [ ] copy
+# - [ ] ytdl é criado múltiplas vezes pra uma mesma operação
+# - [ ] informações no header não atualizam
 
 def get_selected_ids(table: QTableWidget) -> list[str]:
     # obter todos os índices selecionados
@@ -44,9 +46,12 @@ class MainWindow(QMainWindow):
     def __init__(self, collection_file: Path):
         super().__init__()
 
+        # dados e api
         self.collection_file = collection_file
         self.collection_data = utils.read_file(collection_file)
+        self.ytdl = youtube.instance_ytdl()
 
+        # inputs
         self.button_insert = QPushButton('Insert')
         self.button_remove = QPushButton('Remove')
         self.button_move = QPushButton('Move')
@@ -57,7 +62,10 @@ class MainWindow(QMainWindow):
         self.button_move.clicked.connect(self.action_move)
 
         self.input_insert = QLineEdit()
+        #self.input_root = QLineEdit()
+        #self.input_root.textChanged.connect(self.action_change_root)
         
+        # contents
         self.header = QHBoxLayout()
         self.header.addLayout(self.compose_info_panel())
         self.header.addLayout(self.compose_control_panel())
@@ -65,7 +73,14 @@ class MainWindow(QMainWindow):
         self.table = self.compose_videos_table()
         self.load_table_contents() # carregar o conteúdo pela primeira vez
 
-        self.ytdl = youtube.instance_ytdl()
+        # file tree
+        self.root = '/mnt/seagate/workspace/coding/experimental/exp-sorted-py/testei'
+        self.button_root = QPushButton('Pick root')
+        self.button_root.clicked.connect(self.action_pick_root)
+        
+        self.model = None # tem que ser self pq é importante pra operações com a file tree
+        self.file_tree = self.compose_file_tree()
+        self.file_tree.clicked.connect(self.action_change_collection)
 
         # definir o widget central
         central = QWidget()
@@ -79,9 +94,18 @@ class MainWindow(QMainWindow):
         contents.addLayout(self.header)
         contents.addWidget(self.table)
 
+        widget_sidebar = QWidget()
+        widget_sidebar.setMaximumWidth(350) # é definido no widget inteiro, não só na file tree
+        sidebar = QVBoxLayout(widget_sidebar)
+
+        #sidebar.addWidget(self.input_root)
+        sidebar.addWidget(self.button_root)
+        sidebar.addWidget(self.file_tree)
+
         # layout, definir o que vai estar na horizontal
         # ex: sidebar, file tree, contents etc.
         layout = QHBoxLayout(central)
+        layout.addWidget(widget_sidebar)
         layout.addWidget(widget_contents)
 
     def compose_info_panel(self) -> QVBoxLayout:
@@ -142,12 +166,30 @@ class MainWindow(QMainWindow):
         table.setColumnCount(len(columns))
         table.setHorizontalHeaderLabels(columns) # mostrar nomes nas colunas em vez de índices
 
-        table.setColumnWidth(0, 500)
+        table.setColumnWidth(0, 600)
 
         table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows) # selecionar por row
         table.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection) # múltiplas seleções
 
         return table
+
+    def compose_file_tree(self) -> QTreeWidget:
+        self.model = QFileSystemModel()
+        self.model.setRootPath(self.root)
+
+        #tree = QTreeWidget()
+        tree = QTreeView()
+        tree.setModel(self.model)
+
+        tree.setRootIndex(self.model.index(self.root))
+
+        tree.setHeaderHidden(True)
+        # tree.setMaximumWidth(250)
+        tree.hideColumn(1)
+        tree.hideColumn(2)
+        tree.hideColumn(3)
+
+        return tree
 
     def load_table_contents(self):
         # antes de obter as entradas, atualiza os dados locais da classe
@@ -226,6 +268,36 @@ class MainWindow(QMainWindow):
         )
 
         self.load_table_contents()
+    
+    def action_change_collection(self, index):
+        # obtém o caminho de um arquivo clicado na file tree
+        # e se for uma collection válida, atualiza a visualização pra ela
+        model = self.file_tree.model()
+
+        dest = model.filePath(index)
+        dest = Path(dest)
+        if utils.file_collection_type_matches('videos', dest):
+            self.collection_file = dest
+            self.load_table_contents()
+    
+    # def action_change_root(self):
+    #     dest = self.input_root.text()
+    #     if not Path(dest).is_dir():
+    #         return
+    #     self.root = dest
+    #     self.model.setRootPath(self.root)
+    #     self.file_tree.setRootIndex(self.model.index(self.root))
+
+    def action_pick_root(self):
+        root = QFileDialog.getExistingDirectory(
+            parent=self,
+            caption='Pick root'
+        )
+        if Path(root).is_dir():
+            self.root = root
+            self.model.setRootPath(root)
+            self.file_tree.setRootIndex(self.model.index(root))
+        
 
 def main():
     app = QApplication([])
