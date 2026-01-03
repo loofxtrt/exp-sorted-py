@@ -18,11 +18,47 @@ class ServiceMetadata:
     service_name: str
     resolvable_id: str
 
+    def to_dict(self):
+        return {
+            'service-name': self.service_name,
+            'resolvable-id': self.resolvable_id
+        }
+    
+    @classmethod
+    def from_dict(self, data: dict):
+        if not data: # se converter uma entry que não tem service metadata
+            return
+
+        return ServiceMetadata(
+            service_name=data.get('service-name'),
+            resolvable_id=data.get('resolvable-id')
+        )
+
 @dataclass
 class Entry:
-    service_metadata: ServiceMetadata
     id: str
     inserted_at: str
+    url: str | None = None
+    service_metadata: ServiceMetadata | None = None
+
+    def to_dict(self): # não deve ter o decorator classmethod
+        return {
+            'id': self.id,
+            'inserted-at': self.inserted_at,
+            'service-metadata': self.service_metadata.to_dict()
+        }
+    
+    @classmethod
+    def from_dict(self, data: dict):
+        return Entry(
+            id=data.get('id'),
+            inserted_at=data.get('inserted-at'),
+            url=data.get('url', None),
+            service_metadata=ServiceMetadata.from_dict(data.get('service-metadata'))
+        )
+
+# @dataclass
+# class Collection:
 
 def get_file_from_id(collection_id: str, base_directory: Path) -> None | Path:
     if not base_directory.is_dir():

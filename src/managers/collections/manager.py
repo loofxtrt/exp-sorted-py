@@ -6,6 +6,7 @@ from send2trash import send2trash
 import pathvalidate
 
 from . import utils
+from .utils import Entry, ServiceMetadata
 from ... import logger
 from ...utils import generic, json_io
 from ...managers import settings
@@ -136,7 +137,7 @@ def handle_entry_insertion(
     collection: Path,
     entry_data: dict,
     presence_verification: bool = True,
-    ) -> dict | None:
+    ) -> Entry | None:
     """
     adiciona uma nova entrada dentro da collection informada
     
@@ -174,7 +175,8 @@ def handle_entry_insertion(
 
     # retorna os dados que acabou de criar pra função que a chamou
     # pode ser usado em situações onde o chamador tem que saber o id da entry, por exemplo
-    return entry_data
+    entry = Entry.from_dict(collection_data)
+    return entry
 
 def remove_entry(collection: Path, entry_id: str):
     """
@@ -242,11 +244,11 @@ def move_entry(
         raise InvalidCollectionData(f'One or both of the collections are invalid:\n{src_collection}\n{dest_collection}')
 
     # obter a entrada em específico pelo id dela
-    entry = utils.get_entry_data_by_id(data_src, entry_id)
+    entry = utils.get_entry_by_id(data_src, entry_id)
     if not entry:
         raise EntryNotFound(f'{entry_id} not found in {src_collection}')
     if presence_verification:
-        if utils.is_entry_present(data_dest, entry):
+        if utils.is_entry_present(entry.to_dict(), data_dest):
             logger.info('o item já está presente na collection de destino')
             return False
 
@@ -257,7 +259,7 @@ def move_entry(
         raise MismatchedCollectionType()
 
     # mover a entrada de uma collection pra outra
-    handle_entry_insertion(dest_collection, entry, presence_verification)
+    handle_entry_insertion(dest_collection, entry.to_dict(), presence_verification)
     remove_entry(src_collection, entry_id)
         
     logger.success(f'entrada {entry_id} movida de {src_collection} para {dest_collection}')

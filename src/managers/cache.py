@@ -7,17 +7,22 @@ from .. import logger
 from .collections.utils import Entry, ServiceMetadata, Video
 from .settings import CACHE_DIRECTORY
 
-def insert_entry_on_cache(resolvable_id: str, entry_data: dict, cache_file: Path):
-    data = json_io.read_json(cache_file)
+def insert_on_cache(resolvable_id: str, data: dict, cache_file: Path):
+    cache = json_io.read_json(cache_file)
 
-    data[resolvable_id] = entry_data
-    json_io.write_json(file=cache_file, data=data)
+    # previnir valores nulos de entrarem no cache
+    if not cache or not data or not resolvable_id:
+        return
 
-    logger.success(f'entrada escrita no cache: {resolvable_id}')
+    # escrever os dados no cache usando o resolvable id como chave
+    cache[resolvable_id] = data
+    json_io.write_json(file=cache_file, data=cache)
+
+    logger.success(f'informação escrita no cache: {resolvable_id}')
 
 def get_video(service_metadata: ServiceMetadata) -> Video | None:
-    service_name = sm.service_name
-    resolvable_id = sm.resolvable_id
+    service_name = service_metadata.service_name
+    resolvable_id = service_metadata.resolvable_id
     
     cache_file = normalize_json_file(CACHE_DIRECTORY / service_name / 'videos')
     cache_file.parent.mkdir(exist_ok=True, parents=True)
@@ -26,6 +31,8 @@ def get_video(service_metadata: ServiceMetadata) -> Video | None:
     entry_data = cache_data.get(resolvable_id)
 
     if service_name == 'youtube':
+        # obter o vídeo já do cache ou inserir ele em tempo de exeução
+        # caso ele não seja encontrado
         if entry_data:
             return youtube.video_from_dict(entry_data)
         else:
@@ -34,48 +41,14 @@ def get_video(service_metadata: ServiceMetadata) -> Video | None:
             url = youtube.build_youtube_url(resolvable_id)
             info = youtube.extract_video_info(url, ytdl)
             
-            insert_entry_on_cache(
+            insert_on_cache(
                 resolvable_id=resolvable_id,
-                entry_data=info,
+                data=info,
                 cache_file=cache_file
             )
             return youtube.video_from_dict(info)
     
     return None
-            
-def get_cached_entry(collection_type: str, entry: Entry):
-    sm = entry.service_metadata
-    service_name = sm.service_name
-    resolvable_id = sm.resolvable_id
-    
-    cache_file = CACHE_DIRECTORY / service_name / collection_type
-    cache_file = normalize_json_file(cache_file)
-    cache_file.parent.mkdir(exist_ok=True, parents=True)
-
-    cache_data = json_io.read_json(cache_file)
-    entry_data = cache_data.get(resolvable_id)
-
-    cached = None
-
-    if entry_data:
-        # if collection_type == 'videos':
-        cached = youtube.video_from_dict(entry_data)
-    else:
-        ytdl = youtube.instance_ytdl()
-    
-        url = youtube.build_youtube_url(resolvable_id)
-        info = youtube.extract_video_info(url, ytdl)
-        
-        insert_entry_on_cache(
-            resolvable_id=resolvable_id,
-            entry_data=info,
-            cache_file=cache_file
-        )
-        return youtube.video_from_dict(info)
-
-    return cached
-
-
 
 # def get_cache_file(service: str, section: str, ensure_creation: bool = True) -> Path | None:
 #     """

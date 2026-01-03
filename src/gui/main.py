@@ -3,157 +3,236 @@ from pathlib import Path
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow,
     QTableWidget, QTableWidgetItem, QAbstractItemView,
-    QPushButton, QLineEdit, QLabel,
+    QPushButton, QLineEdit, QLabel, QFileDialog,
     QWidget, QVBoxLayout, QHBoxLayout, QTreeWidget, QTreeView
 )
 from PyQt6.QtGui import QFileSystemModel, QFont, QIcon
 from PyQt6.QtCore import Qt
 
 from ..utils import formatting
-from ..managers.collections import utils
+from ..managers.collections import utils, manager
+from ..managers.collections.types import videos
 from ..managers.collections.utils import Entry, ServiceMetadata, Video
 from ..managers import cache, settings
+from ..services import youtube
 
-# insert
-# remove
-# move
-# copy
+# - [x] insert
+# - [x] remove
+# - [x] move
+# - [ ] copy
 
-def compose_videos_table(collection_data: dict) -> QTableWidget:
-    entries = utils.get_entries(collection_data)
-    columns = [
-        'Title',
-        'Uploader',
-        'Duration',
-        'View count',
-        'Upload date'
-    ]
+def get_selected_ids(table: QTableWidget) -> list[str]:
+    # obter todos os índices selecionados
+    selection = table.selectionModel()
+    indexes = selection.selectedRows()
 
-    table = QTableWidget()
+    ids = []
+    for i in indexes:
+        row = i.row() # int correspondente ao número do row
+        item = table.item(row, 0) # 0 sempre é a coluna com o id oculto
 
-    table.setRowCount(len(entries))
-    table.setColumnCount(len(columns))
-    table.setHorizontalHeaderLabels(columns)
-
-    table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows) # selecionar por row
-    table.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection) # múltiplas seleções
-
-    row = 0
-    collection_type = collection_data.get('type')
-    for e in entries:
-        cached = cache.get_cached_entry(collection_type=collection_type, entry=e)
-        column = 0
-
-        if not isinstance(cached, Video):
+        if not item:
             continue
-        for var in [
-            cached.title,
-            cached.uploader,
-            formatting.format_duration(cached.duration),
-            formatting.format_view_count(cached.view_count),
-            formatting.format_upload_date(cached.upload_date)
-        ]:
-            item = QTableWidgetItem(str(var))
-            
-            # adicionar um id oculto na coluna do título correspondente à entrada
-            if var == cached.title:
-                item.setData(Qt.ItemDataRole.UserRole, e.id)
-            
-            table.setItem(row, column, item)
-            
-            column += 1
+
+        # obter o id oculto de cada entry
+        entry_id = item.data(Qt.ItemDataRole.UserRole)
+        ids.append(entry_id)
+
+    return ids
+
+class MainWindow(QMainWindow):
+    def __init__(self, collection_file: Path):
+        super().__init__()
+
+        self.collection_file = collection_file
+        self.collection_data = utils.read_file(collection_file)
+
+        self.button_insert = QPushButton('Insert')
+        self.button_remove = QPushButton('Remove')
+        self.button_move = QPushButton('Move')
+        self.button_copy = QPushButton('Copy')
+
+        self.button_remove.clicked.connect(self.action_remove)
+        self.button_insert.clicked.connect(self.action_insert)
+        self.button_move.clicked.connect(self.action_move)
+
+        self.input_insert = QLineEdit()
         
-        row += 1
+        self.header = QHBoxLayout()
+        self.header.addLayout(self.compose_info_panel())
+        self.header.addLayout(self.compose_control_panel())
 
-    return table
+        self.table = self.compose_videos_table()
+        self.load_table_contents() # carregar o conteúdo pela primeira vez
 
-def compose_info_header(collection_data: dict, collection_file: Path) -> QVBoxLayout:
-    # labels com dados sobre a collection
-    label_title = QLabel(utils.get_title(collection_file))
-    label_entry_count = QLabel(str(utils.get_entry_count(collection_data)))
-    label_type = QLabel(collection_data.get('type').capitalize())
+        self.ytdl = youtube.instance_ytdl()
 
-    font = QFont()
-    font.setPointSize(16)
-    font.setBold(True)
-    label_title.setFont(font)
+        # definir o widget central
+        central = QWidget()
+        self.setCentralWidget(central)
 
-    # título fica em cima
-    vbox_info = QVBoxLayout()
-    vbox_info.addWidget(label_title)
+        # definir como os contents vão ser exibidos
+        # na ordem vertical, primeiro o control panel, depois a table etc.
+        widget_contents = QWidget()
+        contents = QVBoxLayout(widget_contents)
+
+        contents.addLayout(self.header)
+        contents.addWidget(self.table)
+
+        # layout, definir o que vai estar na horizontal
+        # ex: sidebar, file tree, contents etc.
+        layout = QHBoxLayout(central)
+        layout.addWidget(widget_contents)
+
+    def compose_info_panel(self) -> QVBoxLayout:
+        # labels com dados sobre a collection
+        label_title       = QLabel(utils.get_title(self.collection_file))
+        label_entry_count = QLabel(str(utils.get_entry_count(self.collection_data)))
+        label_type        = QLabel(self.collection_data.get('type').capitalize())
+
+        font = QFont()
+        font.setPointSize(16)
+        font.setBold(True)
+        label_title.setFont(font)
+
+        # título fica em cima
+        vbox_info = QVBoxLayout()
+        vbox_info.addWidget(label_title)
+        
+        # demais informações ficam em baixo
+        hbox_sub_info = QHBoxLayout()
+        vbox_info.addLayout(hbox_sub_info)
+        
+        hbox_sub_info.addWidget(label_entry_count)
+        hbox_sub_info.addWidget(label_type)
+
+        return vbox_info
     
-    # demais informações ficam em baixo
-    hbox_sub_info = QHBoxLayout()
-    vbox_info.addLayout(hbox_sub_info)
+    def compose_control_panel(self) -> QVBoxLayout:
+        # input de texto + botão pra inserir novas entradas
+        vbox_control_panel = QVBoxLayout()
+
+        hbox_insert = QHBoxLayout()
+        hbox_insert.addWidget(self.input_insert)
+        hbox_insert.addWidget(self.button_insert)
+
+        vbox_control_panel.addLayout(hbox_insert)
+
+        # row de ações que podem ser tomadas pra cada entrada
+        hbox_actions = QHBoxLayout()
+
+        for b in [self.button_remove, self.button_move, self.button_copy]:
+            hbox_actions.addWidget(b)
+        
+        vbox_control_panel.addLayout(hbox_actions)
+        
+        return vbox_control_panel
+
+    def compose_videos_table(self) -> QTableWidget:
+        columns = [
+            'Title',
+            'Uploader',
+            'Duration',
+            'View count',
+            'Upload date'
+        ]
+
+        table = QTableWidget()
+
+        table.setColumnCount(len(columns))
+        table.setHorizontalHeaderLabels(columns) # mostrar nomes nas colunas em vez de índices
+
+        table.setColumnWidth(0, 500)
+
+        table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows) # selecionar por row
+        table.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection) # múltiplas seleções
+
+        return table
+
+    def load_table_contents(self):
+        # antes de obter as entradas, atualiza os dados locais da classe
+        # isso deve ser feito pra ela sempre ser 1:1 com a collection do file system
+        # sem isso, mesmo com clearcontents, a tebela ficaria desatualizada
+        self.collection_data = utils.read_file(self.collection_file)
+        entries = utils.get_entries(self.collection_data)
+
+        self.table.clearContents() # limpar a tabela antes de atualizar
+        self.table.clearSelection() # desselecionar tudo ao atualizar
+        self.table.setRowCount(len(entries)) # setar o número certo de rows
+
+        row = 0
+        collection_type = self.collection_data.get('type')
+        for e in entries:
+            cached = cache.get_video(e.service_metadata)
+            column = 0
+
+            if not isinstance(cached, Video):
+                continue
+        
+            for var in [
+                cached.title,
+                cached.uploader,
+                formatting.format_duration(cached.duration),
+                formatting.format_view_count(cached.view_count),
+                formatting.format_upload_date(cached.upload_date)
+            ]:
+                item = QTableWidgetItem(str(var))
+                
+                # adicionar um id oculto correspondente à entrada na coluna 0
+                # esse id NÃO é o id resolvivel do serviço
+                if column == 0:
+                    item.setData(Qt.ItemDataRole.UserRole, e.id)
+                
+                self.table.setItem(row, column, item)        
+                column += 1
+            
+            row += 1
+
+    def action_remove(self):
+        ids = get_selected_ids(self.table)
+        for i in ids:
+            manager.remove_entry(self.collection_file, i)
+        
+        self.load_table_contents()
     
-    hbox_sub_info.addWidget(label_entry_count)
-    hbox_sub_info.addWidget(label_type)
+    def action_move(self):
+        # promptar o caminho novo pra entrada
+        dest, _ = QFileDialog.getOpenFileName(
+            parent=self,
+            caption='Select entry destination',
+            filter='json (*.json)'
+        )
+        dest = Path(dest)
 
-    return vbox_info
+        # se o destino for do mesmo tipo que a collection atual, é uma moção válida
+        if utils.file_collection_type_matches('videos', dest):
+            ids = get_selected_ids(self.table)
+            for i in ids:
+                manager.move_entry(
+                    src_collection=self.collection_file,
+                    dest_collection=dest,
+                    entry_id=i
+                )
+            
+            self.load_table_contents()
 
-def compose_control_panel() -> QVBoxLayout:
-    # input de texto + botão pra inserir novas entradas
-    vbox_control_panel = QVBoxLayout()
+    def action_insert(self):
+        # obtém o conteúdo do input de texto e adiciona na collection
+        value = self.input_insert.text()
+        videos.insert_youtube_video(
+            collection=self.collection_file,
+            ytdl=self.ytdl,
+            url=value
+        )
 
-    hbox_insert = QHBoxLayout()
-    input_insert = QLineEdit()
-    button_insert = QPushButton('Insert')
-    hbox_insert.addWidget(input_insert)
-    hbox_insert.addWidget(button_insert)
-
-    vbox_control_panel.addLayout(hbox_insert)
-
-    # row de ações que podem ser tomadas pra cada entrada
-    hbox_actions = QHBoxLayout()
-    
-    button_remove = QPushButton('Remove')
-    button_move = QPushButton('Move')
-    button_copy = QPushButton('Copy')
-
-    for b in [button_remove, button_move, button_copy]:
-        hbox_actions.addWidget(b)
-        b.setDisabled(True) # desabilitar todos
-
-    # button_remove.setIcon(QIcon.fromTheme('edit-delete'))
-    # button_copy.setIcon(QIcon.fromTheme('edit-copy'))
-    # button_move.setIcon(QIcon.fromTheme('folder-move'))
-    # button_insert.setIcon(QIcon.fromTheme('add'))
-    
-    vbox_control_panel.addLayout(hbox_actions)
-    
-    return vbox_control_panel
+        self.load_table_contents()
 
 def main():
     app = QApplication([])
 
-    file = Path('/mnt/seagate/workspace/coding/experimental/exp-sorted-py/testei/eumerly.json')
+    file = Path('/mnt/seagate/workspace/coding/experimental/exp-sorted-py/testei/eumerlyteste.json')
 
-    data = utils.read_file(file)
-    table = compose_videos_table(data)
-
-    central = QWidget()
-    layout = QHBoxLayout(central)
-
-    # contents
-    c_widget = QWidget()
-    contents = QVBoxLayout(c_widget)
-
-    hbox_header = QHBoxLayout()
-
-    vbox_info = compose_info_header(data, file)
-    hbox_header.addLayout(vbox_info)
-
-    vbox_control_panel = compose_control_panel()
-    hbox_header.addLayout(vbox_control_panel)
-
-    # layout
-    layout.addWidget(c_widget)
-
-    contents.addLayout(hbox_header)
-    contents.addWidget(table)
-
-    main_window = QMainWindow()
-    main_window.setCentralWidget(central)
+    main_window = MainWindow(file)
     main_window.show()
 
     app.exec()

@@ -4,6 +4,7 @@ from yt_dlp import YoutubeDL
 
 from ... import cache, settings
 from ...collections import manager, utils
+from ...collections.utils import Entry, ServiceMetadata
 from ....services import youtube
 from .... import logger
 
@@ -13,15 +14,47 @@ def insert_youtube_video(
     collection: Path,
     url: str,
     ytdl: YoutubeDL,
+    ) -> Entry:
+    video_id = youtube.unstable_extract_video_id(url)
+    if not video_id:
+        return
+
+    sm = ServiceMetadata(
+        service_name='youtube',
+        resolvable_id=video_id
+    )
+    video_data = cache.get_video(sm)
+    
+    return manager.insert_entry_service(
+        collection=collection,
+        media_type=_MEDIA_TYPE,
+        resolvable_id=video_id,
+        service_name='youtube'
+    )
+
+def __insert_youtube_video(
+    collection: Path,
+    url: str,
+    ytdl: YoutubeDL,
     update_existing_cached: bool = False
     ):
-    cache_file = settings.get_cache_file('youtube', _MEDIA_TYPE)
+    video_id = youtube.unstable_extract_video_id(url)
 
     # extrair o id do vídeo de forma rápida antes de tentar extrair os dados pelo ytdl
     # se esse id já estiver presente no cache, usa os dados atrelados a ele
-    video_id = youtube.unstable_extract_video_id(url)
     if video_id:
-        video_data = cache.get_cached_entry_data(resolvable_id=video_id, cache_file=cache_file)
+        sm = ServiceMetadata(
+            service_name='youtube',
+            resolvable_id=video_id
+        )
+        video_data = cache.get_video(sm)
+
+    entry = manager.insert_entry_service(
+        collection=collection,
+        media_type=_MEDIA_TYPE,
+        resolvable_id=video_id,
+        service_name='youtube'
+    )
     
     # se os dados forem inválidos, significa que ou o vídeo realmente não existe no cache,
     # ou que a primeira extração de id falhou, então é mais seguro tentar de novo usando o ytdl

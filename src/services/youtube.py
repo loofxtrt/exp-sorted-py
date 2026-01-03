@@ -93,6 +93,9 @@ def extract_video_info(url: str, ytdl: YoutubeDL) -> dict | None :
     }
 
 def video_from_dict(data: dict) -> Video:
+    if not data:
+        return
+    
     return Video(
         # video_id = data.get('id') # dígitos que aparecem depois de watch?v= em urls de vídeos
         title = data.get('title'),
@@ -104,6 +107,9 @@ def video_from_dict(data: dict) -> Video:
     )
 
 def video_to_dict(video: Video) -> Video:
+    if not video:
+        return
+    
     return {
         'title': video.title,
         'upload_date': video.upload_date,
