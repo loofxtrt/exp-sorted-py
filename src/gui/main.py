@@ -3,7 +3,7 @@ from pathlib import Path
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow,
     QTableWidget, QTableWidgetItem, QAbstractItemView,
-    QPushButton, QLineEdit, QLabel, QFileDialog,
+    QPushButton, QLineEdit, QLabel, QFileDialog, QInputDialog,
     QWidget, QVBoxLayout, QHBoxLayout, QTreeWidget, QTreeView
 )
 from PyQt6.QtGui import QFileSystemModel, QFont, QIcon
@@ -20,8 +20,10 @@ from ..services import youtube
 # - [x] remove
 # - [x] move
 # - [ ] copy
+# - [x] create
 # - [ ] ytdl é criado múltiplas vezes pra uma mesma operação
 # - [ ] informações no header não atualizam
+# - [ ] verificação de collection válida
 
 def get_selected_ids(table: QTableWidget) -> list[str]:
     # obter todos os índices selecionados
@@ -82,6 +84,9 @@ class MainWindow(QMainWindow):
         self.file_tree = self.compose_file_tree()
         self.file_tree.clicked.connect(self.action_change_collection)
 
+        self.button_create = QPushButton('+')
+        self.button_create.clicked.connect(self.action_create_collection)
+
         # definir o widget central
         central = QWidget()
         self.setCentralWidget(central)
@@ -101,6 +106,7 @@ class MainWindow(QMainWindow):
         #sidebar.addWidget(self.input_root)
         sidebar.addWidget(self.button_root)
         sidebar.addWidget(self.file_tree)
+        sidebar.addWidget(self.button_create)
 
         # layout, definir o que vai estar na horizontal
         # ex: sidebar, file tree, contents etc.
@@ -276,6 +282,10 @@ class MainWindow(QMainWindow):
 
         dest = model.filePath(index)
         dest = Path(dest)
+        
+        if not dest or not dest.is_file():
+            return
+
         if utils.file_collection_type_matches('videos', dest):
             self.collection_file = dest
             self.load_table_contents()
@@ -297,7 +307,20 @@ class MainWindow(QMainWindow):
             self.root = root
             self.model.setRootPath(root)
             self.file_tree.setRootIndex(self.model.index(root))
-        
+    
+    def action_create_collection(self):
+        text, ok = QInputDialog.getText(
+            self,
+            'Collection title',
+            'Set a title for this collection'
+        )
+
+        if ok and text:
+            manager.create_collection(
+                title=text,
+                media_type='videos',
+                output_directory=Path(self.root)
+            )
 
 def main():
     app = QApplication([])
