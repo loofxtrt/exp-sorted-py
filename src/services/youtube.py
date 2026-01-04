@@ -6,17 +6,25 @@ from .. import logger
 from ..managers import settings
 from ..managers.collections.utils import Video
 
+_ytdl = None
+
 def instance_ytdl(options: dict | None = None) -> YoutubeDL:
     """
     se o ytdl for ser usado duas vezes numa mesma função, a instância retornada
     por essa função pode ser atribuída a uma variável pra evitar a recriação da api
+
+    se isso já tiver sido chamado uma vez, a função retorna a instância já existente
     """
 
-    if options is None:
-        options = settings.get('ytdl-options')
+    global _ytdl
 
-    ytdl = YoutubeDL(options)
-    return ytdl
+    if _ytdl is None:
+        if options is None:
+            options = settings.get('ytdl-options')
+
+        _ytdl = YoutubeDL(options)
+    
+    return _ytdl
 
 def build_youtube_url(video_id: str):
     """

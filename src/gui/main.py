@@ -21,8 +21,8 @@ from ..services import youtube
 # - [x] move
 # - [ ] copy
 # - [x] create
-# - [ ] ytdl é criado múltiplas vezes pra uma mesma operação
-# - [ ] informações no header não atualizam
+# - [x] ytdl é criado múltiplas vezes pra uma mesma operação
+# - [x] informações no header não atualizam
 # - [ ] verificação de collection válida
 
 def get_selected_ids(table: QTableWidget) -> list[str]:
@@ -45,12 +45,13 @@ def get_selected_ids(table: QTableWidget) -> list[str]:
     return ids
 
 class MainWindow(QMainWindow):
-    def __init__(self, collection_file: Path):
+    def __init__(self, collection_file: Path | None = None):
         super().__init__()
 
         # dados e api
         self.collection_file = collection_file
-        self.collection_data = utils.read_file(collection_file)
+        self.collection_data = None
+        #self.collection_data = utils.read_file(collection_file)
         self.ytdl = youtube.instance_ytdl()
 
         # inputs
@@ -67,6 +68,18 @@ class MainWindow(QMainWindow):
         #self.input_root = QLineEdit()
         #self.input_root.textChanged.connect(self.action_change_root)
         
+        # info
+        self.label_title = QLabel()
+        self.label_entry_count = QLabel()
+        self.label_type = QLabel()
+
+        font = QFont()
+        font.setPointSize(16)
+        font.setBold(True)
+        self.label_title.setFont(font)
+
+        self.load_info_labels()
+
         # contents
         self.header = QHBoxLayout()
         self.header.addLayout(self.compose_info_panel())
@@ -76,7 +89,7 @@ class MainWindow(QMainWindow):
         self.load_table_contents() # carregar o conteúdo pela primeira vez
 
         # file tree
-        self.root = '/mnt/seagate/workspace/coding/experimental/exp-sorted-py/testei'
+        self.root = str(cache.get_last_root()) # carregar o último root que foi usado
         self.button_root = QPushButton('Pick root')
         self.button_root.clicked.connect(self.action_pick_root)
         
@@ -115,26 +128,16 @@ class MainWindow(QMainWindow):
         layout.addWidget(widget_contents)
 
     def compose_info_panel(self) -> QVBoxLayout:
-        # labels com dados sobre a collection
-        label_title       = QLabel(utils.get_title(self.collection_file))
-        label_entry_count = QLabel(str(utils.get_entry_count(self.collection_data)))
-        label_type        = QLabel(self.collection_data.get('type').capitalize())
-
-        font = QFont()
-        font.setPointSize(16)
-        font.setBold(True)
-        label_title.setFont(font)
-
         # título fica em cima
         vbox_info = QVBoxLayout()
-        vbox_info.addWidget(label_title)
+        vbox_info.addWidget(self.label_title)
         
         # demais informações ficam em baixo
         hbox_sub_info = QHBoxLayout()
         vbox_info.addLayout(hbox_sub_info)
         
-        hbox_sub_info.addWidget(label_entry_count)
-        hbox_sub_info.addWidget(label_type)
+        hbox_sub_info.addWidget(self.label_entry_count)
+        hbox_sub_info.addWidget(self.label_type)
 
         return vbox_info
     
@@ -198,6 +201,9 @@ class MainWindow(QMainWindow):
         return tree
 
     def load_table_contents(self):
+        if not self.collection_file:
+            return
+
         # antes de obter as entradas, atualiza os dados locais da classe
         # isso deve ser feito pra ela sempre ser 1:1 com a collection do file system
         # sem isso, mesmo com clearcontents, a tebela ficaria desatualizada
@@ -236,6 +242,15 @@ class MainWindow(QMainWindow):
             
             row += 1
 
+    def load_info_labels(self):
+        if not self.collection_data or not self.collection_file:
+            return
+
+        # atualiza os dados exibidos sobre a collection
+        self.label_title.setText(utils.get_title(self.collection_file))
+        self.label_entry_count.setText(str(utils.get_entry_count(self.collection_data)))
+        self.label_type.setText(self.collection_data.get('type').capitalize())
+
     def action_remove(self):
         ids = get_selected_ids(self.table)
         for i in ids:
@@ -250,7 +265,13 @@ class MainWindow(QMainWindow):
             caption='Select entry destination',
             filter='json (*.json)'
         )
+
+        if not dest:
+            return
+
         dest = Path(dest)
+        if not dest.is_file():
+            return
 
         # se o destino for do mesmo tipo que a collection atual, é uma moção válida
         if utils.file_collection_type_matches('videos', dest):
@@ -289,6 +310,8 @@ class MainWindow(QMainWindow):
         if utils.file_collection_type_matches('videos', dest):
             self.collection_file = dest
             self.load_table_contents()
+
+        self.load_info_labels()
     
     # def action_change_root(self):
     #     dest = self.input_root.text()
@@ -299,14 +322,19 @@ class MainWindow(QMainWindow):
     #     self.file_tree.setRootIndex(self.model.index(self.root))
 
     def action_pick_root(self):
+        # define o novo root, o diretório usado pra visualizar
+        # quais playlists ele contém
         root = QFileDialog.getExistingDirectory(
             parent=self,
             caption='Pick root'
         )
+
         if Path(root).is_dir():
             self.root = root
             self.model.setRootPath(root)
             self.file_tree.setRootIndex(self.model.index(root))
+        
+        cache.write_last_root(Path(root))
     
     def action_create_collection(self):
         text, ok = QInputDialog.getText(
@@ -325,7 +353,8 @@ class MainWindow(QMainWindow):
 def main():
     app = QApplication([])
 
-    file = Path('/mnt/seagate/workspace/coding/experimental/exp-sorted-py/testei/eumerlyteste.json')
+    #file = Path('/mnt/seagate/workspace/coding/experimental/exp-sorted-py/testei/eumerlyteste.json')
+    file = None
 
     main_window = MainWindow(file)
     main_window.show()

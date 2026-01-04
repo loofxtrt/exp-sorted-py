@@ -7,6 +7,8 @@ from .. import logger
 from .collections.utils import Entry, ServiceMetadata, Video
 from .settings import CACHE_DIRECTORY
 
+PATHS = normalize_json_file(CACHE_DIRECTORY / 'paths')
+
 def insert_on_cache(resolvable_id: str, data: dict, cache_file: Path):
     cache = json_io.read_json(cache_file)
 
@@ -49,6 +51,31 @@ def get_video(service_metadata: ServiceMetadata) -> Video | None:
             return youtube.video_from_dict(info)
     
     return None
+
+def get_paths() -> dict:
+    return json_io.read_json(PATHS)
+
+def get_last_root() -> Path:
+    """
+    retorna o último root usado (caso ele esteja presente no cache)
+    se não estiver, retorna a home padrão do sistema como root
+    
+    ambos os caminhos são transformados em absolutos com .resolve()
+    """
+
+    data = get_paths()
+    root = Path(data.get('last-root'))
+
+    if not root.is_dir():
+        return Path.home().resolve()
+    
+    return root.resolve()
+
+def write_last_root(root: Path):
+    data = get_paths()
+    data['last-root'] = str(root.resolve())
+
+    json_io.write_json(PATHS, data)
 
 # def get_cache_file(service: str, section: str, ensure_creation: bool = True) -> Path | None:
 #     """
