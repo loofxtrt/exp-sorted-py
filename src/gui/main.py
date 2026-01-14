@@ -24,6 +24,7 @@ from ..services import youtube
 # - [x] ytdl é criado múltiplas vezes pra uma mesma operação
 # - [x] informações no header não atualizam
 # - [ ] verificação de collection válida
+# - [ ] cache de última playlist aberta
 
 def get_selected_ids(table: QTableWidget) -> list[str]:
     # obter todos os índices selecionados
