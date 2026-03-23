@@ -1,4 +1,5 @@
 from urllib.parse import urlparse, parse_qs
+import requests
 
 from yt_dlp import YoutubeDL
 
@@ -126,3 +127,7 @@ def video_to_dict(video: Video) -> Video:
         'duration': video.duration,
         'thumbnail': video.thumbnail
     }
+
+def download_thumbnail(video: Video):
+    response = requests.get(video.thumbnail)
+    return response

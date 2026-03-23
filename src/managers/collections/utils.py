@@ -250,3 +250,6 @@ def write_file(file: Path, data: dict):
     """
 
     json_io.write_json(file=file, data=data)
+
+def is_collection_valid(collection_file: Path):
+    return collection_file.is_file()

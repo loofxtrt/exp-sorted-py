@@ -6,13 +6,13 @@ from PyQt6.QtWidgets import (
     QPushButton, QLineEdit, QLabel, QFileDialog, QInputDialog,
     QWidget, QVBoxLayout, QHBoxLayout, QTreeWidget, QTreeView
 )
-from PyQt6.QtGui import QFileSystemModel, QFont, QIcon
-from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QFileSystemModel, QFont, QIcon, QPixmap
+from PyQt6.QtCore import Qt, QSize
 
 from ..utils import formatting
 from ..managers.collections import utils, manager
 from ..managers.collections.types import videos
-from ..managers.collections.utils import Entry, ServiceMetadata, Video
+from ..managers.collections.utils import Entry, ServiceMetadata, Video, is_collection_valid
 from ..managers import cache, settings
 from ..services import youtube
 
@@ -54,6 +54,12 @@ class MainWindow(QMainWindow):
         self.collection_data = None
         #self.collection_data = utils.read_file(collection_file)
         self.ytdl = youtube.instance_ytdl()
+
+        if self.collection_file is None:
+            last_collection = cache.get_last_collection()
+            
+            if last_collection:
+                self.collection_file = last_collection
 
         # inputs
         self.button_insert = QPushButton('Insert')
@@ -181,6 +187,9 @@ class MainWindow(QMainWindow):
         table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows) # selecionar por row
         table.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection) # múltiplas seleções
 
+        table.setIconSize(QSize(160, 90)) # definiri o tamanho dos ícones
+        table.verticalHeader().setDefaultSectionSize(120) # aumentar os rows pros ícones caberem
+
         return table
 
     def compose_file_tree(self) -> QTreeWidget:
@@ -232,12 +241,20 @@ class MainWindow(QMainWindow):
                 formatting.format_upload_date(cached.upload_date)
             ]:
                 item = QTableWidgetItem(str(var))
-                
-                # adicionar um id oculto correspondente à entrada na coluna 0
-                # esse id NÃO é o id resolvivel do serviço
+
                 if column == 0:
+                    # adicionar um id oculto correspondente à entrada na coluna 0
+                    # esse id NÃO é o id resolvivel do serviço
                     item.setData(Qt.ItemDataRole.UserRole, e.id)
-                
+
+                    # carregar e adicionar a thumbnail
+                    try:
+                        thumbnail = QPixmap()
+                        thumbnail.loadFromData(youtube.download_thumbnail(cached).content)
+                        item.setIcon(QIcon(thumbnail))
+                    except Exception:
+                        pass
+
                 self.table.setItem(row, column, item)        
                 column += 1
             
@@ -305,12 +322,13 @@ class MainWindow(QMainWindow):
         dest = model.filePath(index)
         dest = Path(dest)
         
-        if not dest or not dest.is_file():
+        if not dest or not is_collection_valid(dest):
             return
 
         if utils.file_collection_type_matches('videos', dest):
             self.collection_file = dest
             self.load_table_contents()
+            cache.write_last_collection(dest)
 
         self.load_info_labels()
     

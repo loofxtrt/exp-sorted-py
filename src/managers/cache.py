@@ -4,7 +4,7 @@ from ..services import youtube
 from ..utils import json_io
 from ..utils.generic import normalize_json_file
 from .. import logger
-from .collections.utils import Entry, ServiceMetadata, Video
+from .collections.utils import Entry, ServiceMetadata, Video, is_collection_valid
 from .settings import CACHE_DIRECTORY
 
 PATHS = normalize_json_file(CACHE_DIRECTORY / 'paths')
@@ -64,16 +64,51 @@ def get_last_root() -> Path:
     """
 
     data = get_paths()
-    root = Path(data.get('last-root'))
+    raw = data.get('last-root')
+    
+    if not raw:
+        return Path.home().resolve()
+
+    root = Path(raw)
 
     if not root.is_dir():
         return Path.home().resolve()
-    
+
     return root.resolve()
 
+def get_last_collection() -> Path | None:
+    """
+    retorna a última collection aberta
+    """
+
+    data = get_paths()
+    raw = data.get('last-collection')
+
+    # Path só deve ser chamado depois da verificação
+    # porque ele pode ainda não existir no cache e quebrar    
+    if not raw:
+        return None
+    
+    collection = Path(raw)
+
+    if not is_collection_valid(collection):
+        return None
+
+    return collection.resolve()
+
 def write_last_root(root: Path):
+    """
+    grava no cache qual foi o último root acessado
+    """
+
     data = get_paths()
     data['last-root'] = str(root.resolve())
+
+    json_io.write_json(PATHS, data)
+
+def write_last_collection(collection: Path):
+    data = get_paths()
+    data['last-collection'] = str(collection.resolve())
 
     json_io.write_json(PATHS, data)
 
