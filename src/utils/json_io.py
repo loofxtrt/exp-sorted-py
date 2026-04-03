@@ -4,6 +4,9 @@ import json
 from .. import logger
 
 def read_json(file: Path) -> dict:
+    if not file.is_file():
+        return {}
+
     try:
         with file.open('r', encoding='utf-8') as f:
             return json.load(f)

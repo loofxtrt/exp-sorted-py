@@ -3,11 +3,7 @@ import json
 
 from .. import logger
 from ..utils import generic
-
-# VALORES INALTERÁVEIS
-SETTINGS_DIRECTORY = Path.home() / '.config' / 'sorted'
-SETTINGS_FILE = SETTINGS_DIRECTORY / 'settings.json'
-CACHE_DIRECTORY = c_dir = Path.home() / '.cache' / 'sorted'
+from ..utils.json_io import read_json, write_json
 
 # IMPORTANTE
 # nas configurações e em jsons no geral, se usa kebab-case, não snake_case
@@ -19,40 +15,73 @@ DEFAULTS = {
     }
 }
 
-_data = None
+settings = None
 
-def _load():
-    """
-    carrega as configurações existentes ou cria as padrões caso ainda não existam
-    essa função geralmente é usada só uma vez e só em um lugar, no momento de inicialização do software
-    """
+class Vault:
+    def __init__(self, vault: Path):
+        """
+        define e cria o diretório oculto do vault
+        """
 
-    global _data
+        self.vault = vault
+        self.dot = self.vault / '.sorted'
+        self.dot.mkdir(parents=True, exist_ok=True)
+    
+    @property
+    def settings(self):
+        """
+        tenta ler o arquivo de configuração, e, se não existir,
+        gera um novo usando as configurações padrões e retorna elas
+        """
 
-    if _data is None:
-        if SETTINGS_FILE.exists() and SETTINGS_FILE.is_file():
-            # se o arquivo já existir, só carregar as configurações dele
-            with SETTINGS_FILE.open('r', encoding='utf-8') as f:
-                _data = json.load(f)
+        path = self.dot / 'settings.json'
+        data = read_json(path)
+        
+        if data:
+            return data
         else:
-            # se não existir, criar um com as configurações padrões
-            _data = DEFAULTS
+            write_json(path, DEFAULTS)
+            return DEFAULTS
+    
+    @property
+    def cache_directory(self):
+        path = self.dot / 'cache'
+        path.mkdir(parents=True, exist_ok=True)
+        
+        return path
 
-            with SETTINGS_FILE.open('w', encoding='utf-8') as f:
-                json.dump(_data, f, indent=4, ensure_ascii=False)
+# def _load():
+#     """
+#     carrega as configurações existentes ou cria as padrões caso ainda não existam
+#     essa função geralmente é usada só uma vez e só em um lugar, no momento de inicialização do software
+#     """
 
-def get(key: str):
-    global _data
+#     global _data
 
-    # carregar as configurações se isso ainda não foi feito
-    if _data is None:
-        _load()
+#     if _data is None:
+#         if SETTINGS_FILE.exists() and SETTINGS_FILE.is_file():
+#             # se o arquivo já existir, só carregar as configurações dele
+#             with SETTINGS_FILE.open('r', encoding='utf-8') as f:
+#                 _data = json.load(f)
+#         else:
+#             # se não existir, criar um com as configurações padrões
+#             _data = DEFAULTS
 
-    # obter o valor correspondente a chave passada pra essa função
-    result = _data.get(key)
+#             with SETTINGS_FILE.open('w', encoding='utf-8') as f:
+#                 json.dump(_data, f, indent=4, ensure_ascii=False)
 
-    if result is None:
-        logger.error(f'erro ao carregar a configuração {key}, usando o valor default como fallback')
-        result = DEFAULTS.get(key)
+# def get(key: str):
+#     global _data
 
-    return result
+#     # carregar as configurações se isso ainda não foi feito
+#     if _data is None:
+#         _load()
+
+#     # obter o valor correspondente a chave passada pra essa função
+#     result = _data.get(key)
+
+#     if result is None:
+#         logger.error(f'erro ao carregar a configuração {key}, usando o valor default como fallback')
+#         result = DEFAULTS.get(key)
+
+#     return result

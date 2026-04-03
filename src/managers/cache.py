@@ -111,30 +111,3 @@ def write_last_collection(collection: Path):
     data['last-collection'] = str(collection.resolve())
 
     json_io.write_json(PATHS, data)
-
-# def get_cache_file(service: str, section: str, ensure_creation: bool = True) -> Path | None:
-#     """
-#     args:
-#         service:
-#             ex: youtube
-        
-#         section:
-#             ex: videos
-#     """
-
-#     file = CACHE_DIRECTORY / service / section
-#     file = generic.normalize_json_file(file)
-    
-#     if not file.exists():
-#         if not ensure_creation:
-#             logger.error(f'a seção {section} é inválida para o cache de {service}')
-#             logger.error(f'o arquivo de cache não existe: {file}')
-#             return
-#         else:
-#             # criar o arquivo se assim especificado
-#             file.parent.mkdir(exist_ok=True, parents=True)
-#             file.touch()
-            
-#             logger.success(f'arquivo de cache criado: {file}')
-
-#     return file
