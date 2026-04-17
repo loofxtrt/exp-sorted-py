@@ -18,7 +18,7 @@ def get_iso_datetime():
     # yyyy-mm-ddThh:mm:ss. o timespec é pra não incluir microsegundos
     return datetime.now().isoformat(timespec='seconds')
 
-def generate_random_id(id_length: int = 8):
+def generate_random_id(id_length: int = 16):
     """
     gera um id usando todas as letras, numeros e alguns caracteres especiais
     """
