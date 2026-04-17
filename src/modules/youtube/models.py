@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-import formatting
+from . import formatting
 
 
 @dataclass

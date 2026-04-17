@@ -1,87 +1,77 @@
 {
     "id": "7NkwZFS0",
-    "type": "videos",
-    "entries": [
-        {
-            "service-metadata": {
-                "resolvable-id": "cg-3ASSZPYY",
-                "service-name": "youtube"
-            },
+    "created-at": "2026-04-17T15:03:38",
+    "entries": {
+        "H6WpBAfE": {
             "id": "H6WpBAfE",
-            "inserted-at": "2025-11-06T12:37:07"
+            "created-at": "2025-11-06T12:37:07",
+            "module": "youtube",
+            "type": "video",
+            "reference": "cg-3ASSZPYY"
         },
-        {
-            "service-metadata": {
-                "resolvable-id": "UDtqcDNCIY0",
-                "service-name": "youtube"
-            },
+        "LbmLKEiu": {
             "id": "LbmLKEiu",
-            "inserted-at": "2025-11-06T19:13:59"
+            "created-at": "2025-11-06T19:13:59",
+            "module": "youtube",
+            "type": "video",
+            "reference": "UDtqcDNCIY0"
         },
-        {
-            "service-metadata": {
-                "resolvable-id": "WeuheY90tZE",
-                "service-name": "youtube"
-            },
+        "wbZDo8Pf": {
             "id": "wbZDo8Pf",
-            "inserted-at": "2025-11-09T14:05:47"
+            "created-at": "2025-11-09T14:05:47",
+            "module": "youtube",
+            "type": "video",
+            "reference": "WeuheY90tZE"
         },
-        {
-            "service-metadata": {
-                "resolvable-id": "xgFLqD6g3mc",
-                "service-name": "youtube"
-            },
+        "XxLlKWko": {
             "id": "XxLlKWko",
-            "inserted-at": "2025-11-09T14:08:56"
+            "created-at": "2025-11-09T14:08:56",
+            "module": "youtube",
+            "type": "video",
+            "reference": "xgFLqD6g3mc"
         },
-        {
-            "service-metadata": {
-                "resolvable-id": "UEVOWVF4fcY",
-                "service-name": "youtube"
-            },
+        "5piOOWOk": {
             "id": "5piOOWOk",
-            "inserted-at": "2025-11-09T14:09:24"
+            "created-at": "2025-11-09T14:09:24",
+            "module": "youtube",
+            "type": "video",
+            "reference": "UEVOWVF4fcY"
         },
-        {
-            "service-metadata": {
-                "resolvable-id": "J1HMxfJj8O0",
-                "service-name": "youtube"
-            },
+        "w0wCcNLE": {
             "id": "w0wCcNLE",
-            "inserted-at": "2025-11-09T14:09:35"
+            "created-at": "2025-11-09T14:09:35",
+            "module": "youtube",
+            "type": "video",
+            "reference": "J1HMxfJj8O0"
         },
-        {
-            "service-metadata": {
-                "resolvable-id": "Em4oHiTfRsc",
-                "service-name": "youtube"
-            },
+        "g16QKLCX": {
             "id": "g16QKLCX",
-            "inserted-at": "2025-11-10T13:58:50"
+            "created-at": "2025-11-10T13:58:50",
+            "module": "youtube",
+            "type": "video",
+            "reference": "Em4oHiTfRsc"
         },
-        {
-            "service-metadata": {
-                "resolvable-id": "jFsJhBJ-9Y8",
-                "service-name": "youtube"
-            },
+        "FRmtS7QA": {
             "id": "FRmtS7QA",
-            "inserted-at": "2025-11-10T13:59:15"
+            "created-at": "2025-11-10T13:59:15",
+            "module": "youtube",
+            "type": "video",
+            "reference": "jFsJhBJ-9Y8"
         },
-        {
-            "service-metadata": {
-                "resolvable-id": "U5pvlTagzOI",
-                "service-name": "youtube"
-            },
+        "lPgzi9db": {
             "id": "lPgzi9db",
-            "inserted-at": "2025-11-12T08:18:24"
+            "created-at": "2025-11-12T08:18:24",
+            "module": "youtube",
+            "type": "video",
+            "reference": "U5pvlTagzOI"
         },
-        {
-            "service-metadata": {
-                "resolvable-id": "hlacpmkSTvY",
-                "service-name": "youtube"
-            },
+        "eYaOy7ST": {
             "id": "eYaOy7ST",
-            "inserted-at": "2026-01-03T15:56:38"
+            "created-at": "2026-01-03T15:56:38",
+            "module": "youtube",
+            "type": "video",
+            "reference": "hlacpmkSTvY"
         }
-    ],
+    },
     "last-modified-at": "2025-11-19T19:29:20"
 }

@@ -1,6 +1,6 @@
 from urllib.parse import urlparse, parse_qs
 
-import api
+from . import api
 
 
 def build_youtube_url(video_id: str):

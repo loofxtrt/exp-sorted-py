@@ -3,24 +3,63 @@ from pathlib import Path
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow,
     QTableWidget, QTableWidgetItem, QAbstractItemView,
-    QListWidget, QListWidgetItem,
     QPushButton, QLineEdit, QLabel, QFileDialog, QInputDialog,
     QWidget, QVBoxLayout, QHBoxLayout, QTreeWidget, QTreeView
 )
 from PyQt6.QtGui import QFileSystemModel, QFont, QIcon, QPixmap
 from PyQt6.QtCore import Qt, QSize
 
-from ..managers.models import Collection
-from ..modules.youtube import builder
+from ..utils import formatting
+from ..managers.collections import utils, manager
+from ..managers.collections.types import videos
+from ..managers.collections.utils import Entry, ServiceMetadata, Video, is_collection_valid
+from ..managers import cache, settings
+from ..services import youtube
 
+# - [x] insert
+# - [x] remove
+# - [x] move
+# - [ ] copy
+# - [x] create
+# - [x] ytdl é criado múltiplas vezes pra uma mesma operação
+# - [x] informações no header não atualizam
+# - [ ] verificação de collection válida
+# - [ ] cache de última playlist aberta
+
+def get_selected_ids(table: QTableWidget) -> list[str]:
+    # obter todos os índices selecionados
+    selection = table.selectionModel()
+    indexes = selection.selectedRows()
+
+    ids = []
+    for i in indexes:
+        row = i.row() # int correspondente ao número do row
+        item = table.item(row, 0) # 0 sempre é a coluna com o id oculto
+
+        if not item:
+            continue
+
+        # obter o id oculto de cada entry
+        entry_id = item.data(Qt.ItemDataRole.UserRole)
+        ids.append(entry_id)
+
+    return ids
 
 class MainWindow(QMainWindow):
-    def __init__(self, scol: Path, root: Path):
+    def __init__(self, collection_file: Path | None = None):
         super().__init__()
 
         # dados e api
-        self.scol = scol
-        self.collection = Collection.from_file(self.scol)
+        self.collection_file = collection_file
+        self.collection_data = None
+        #self.collection_data = utils.read_file(collection_file)
+        self.ytdl = youtube.instance_ytdl()
+
+        if self.collection_file is None:
+            last_collection = cache.get_last_collection()
+            
+            if last_collection:
+                self.collection_file = last_collection
 
         # inputs
         self.button_insert = QPushButton('Insert')
@@ -33,6 +72,8 @@ class MainWindow(QMainWindow):
         self.button_move.clicked.connect(self.action_move)
 
         self.input_insert = QLineEdit()
+        #self.input_root = QLineEdit()
+        #self.input_root.textChanged.connect(self.action_change_root)
         
         # info
         self.label_title = QLabel()
@@ -51,11 +92,11 @@ class MainWindow(QMainWindow):
         self.header.addLayout(self.compose_info_panel())
         self.header.addLayout(self.compose_control_panel())
 
-        self.qlist = self.compose_list_widget()
-        self.load_list_contents() # carregar o conteúdo pela primeira vez
+        self.table = self.compose_videos_table()
+        self.load_table_contents() # carregar o conteúdo pela primeira vez
 
         # file tree
-        self.root = str(root) # carregar o último root que foi usado
+        self.root = str(cache.get_last_root()) # carregar o último root que foi usado
         self.button_root = QPushButton('Pick root')
         self.button_root.clicked.connect(self.action_pick_root)
         
@@ -76,12 +117,13 @@ class MainWindow(QMainWindow):
         contents = QVBoxLayout(widget_contents)
 
         contents.addLayout(self.header)
-        contents.addWidget(self.qlist)
+        contents.addWidget(self.table)
 
         widget_sidebar = QWidget()
         widget_sidebar.setMaximumWidth(350) # é definido no widget inteiro, não só na file tree
         sidebar = QVBoxLayout(widget_sidebar)
 
+        #sidebar.addWidget(self.input_root)
         sidebar.addWidget(self.button_root)
         sidebar.addWidget(self.file_tree)
         sidebar.addWidget(self.button_create)
@@ -126,44 +168,106 @@ class MainWindow(QMainWindow):
         
         return vbox_control_panel
 
-    def compose_list_widget(self) -> QListWidget:
-        qlist = QListWidget()
-        qlist.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
+    def compose_videos_table(self) -> QTableWidget:
+        columns = [
+            'Title',
+            'Uploader',
+            'Duration',
+            'View count',
+            'Upload date'
+        ]
 
-        return qlist
+        table = QTableWidget()
+
+        table.setColumnCount(len(columns))
+        table.setHorizontalHeaderLabels(columns) # mostrar nomes nas colunas em vez de índices
+
+        table.setColumnWidth(0, 600)
+
+        table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows) # selecionar por row
+        table.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection) # múltiplas seleções
+
+        table.setIconSize(QSize(160, 90)) # definiri o tamanho dos ícones
+        table.verticalHeader().setDefaultSectionSize(120) # aumentar os rows pros ícones caberem
+
+        return table
 
     def compose_file_tree(self) -> QTreeWidget:
         self.model = QFileSystemModel()
         self.model.setRootPath(self.root)
 
+        #tree = QTreeWidget()
         tree = QTreeView()
         tree.setModel(self.model)
 
         tree.setRootIndex(self.model.index(self.root))
 
         tree.setHeaderHidden(True)
+        # tree.setMaximumWidth(250)
         tree.hideColumn(1)
         tree.hideColumn(2)
         tree.hideColumn(3)
 
         return tree
 
-    def load_list_contents(self):
-        self.qlist.clear()
-        
-        entries = self.collection.entries
-        for e in entries:
-            item, widget = builder.build_video_entry('lorem ipsum', e.id)
-        
-            self.qlist.addItem(item)
-            self.qlist.setItemWidget(item, widget)
+    def load_table_contents(self):
+        if not self.collection_file:
+            return
 
-            print('adicionado')
+        # antes de obter as entradas, atualiza os dados locais da classe
+        # isso deve ser feito pra ela sempre ser 1:1 com a collection do file system
+        # sem isso, mesmo com clearcontents, a tebela ficaria desatualizada
+        self.collection_data = utils.read_file(self.collection_file)
+        entries = utils.get_entries(self.collection_data)
+
+        self.table.clearContents() # limpar a tabela antes de atualizar
+        self.table.clearSelection() # desselecionar tudo ao atualizar
+        self.table.setRowCount(len(entries)) # setar o número certo de rows
+
+        row = 0
+        collection_type = self.collection_data.get('type')
+        for e in entries:
+            cached = cache.get_video(e.service_metadata)
+            column = 0
+
+            if not isinstance(cached, Video):
+                continue
+        
+            for var in [
+                cached.title,
+                cached.uploader,
+                formatting.format_duration(cached.duration),
+                formatting.format_view_count(cached.view_count),
+                formatting.format_upload_date(cached.upload_date)
+            ]:
+                item = QTableWidgetItem(str(var))
+
+                if column == 0:
+                    # adicionar um id oculto correspondente à entrada na coluna 0
+                    # esse id NÃO é o id resolvivel do serviço
+                    item.setData(Qt.ItemDataRole.UserRole, e.id)
+
+                    # carregar e adicionar a thumbnail
+                    try:
+                        thumbnail = QPixmap()
+                        thumbnail.loadFromData(youtube.download_thumbnail(cached).content)
+                        item.setIcon(QIcon(thumbnail))
+                    except Exception:
+                        pass
+
+                self.table.setItem(row, column, item)        
+                column += 1
+            
+            row += 1
 
     def load_info_labels(self):
+        if not self.collection_data or not self.collection_file:
+            return
+
         # atualiza os dados exibidos sobre a collection
-        self.label_title.setText(self.collection.name)
-        self.label_entry_count.setText(str(self.collection.entry_count))
+        self.label_title.setText(utils.get_title(self.collection_file))
+        self.label_entry_count.setText(str(utils.get_entry_count(self.collection_data)))
+        self.label_type.setText(self.collection_data.get('type').capitalize())
 
     def action_remove(self):
         ids = get_selected_ids(self.table)
@@ -218,23 +322,23 @@ class MainWindow(QMainWindow):
         dest = model.filePath(index)
         dest = Path(dest)
         
-        #if not dest or not is_collection_valid(dest):
-        #    return
+        if not dest or not is_collection_valid(dest):
+            return
 
-        self.scol = dest
-        self.collection = Collection.from_file(self.scol)
-        self.load_list_contents()
-        #cache.write_last_collection(dest)
+        if utils.file_collection_type_matches('videos', dest):
+            self.collection_file = dest
+            self.load_table_contents()
+            cache.write_last_collection(dest)
 
         self.load_info_labels()
     
-    def action_change_root(self):
-        dest = self.input_root.text()
-        if not Path(dest).is_dir():
-            return
-        self.root = dest
-        self.model.setRootPath(self.root)
-        self.file_tree.setRootIndex(self.model.index(self.root))
+    # def action_change_root(self):
+    #     dest = self.input_root.text()
+    #     if not Path(dest).is_dir():
+    #         return
+    #     self.root = dest
+    #     self.model.setRootPath(self.root)
+    #     self.file_tree.setRootIndex(self.model.index(self.root))
 
     def action_pick_root(self):
         # define o novo root, o diretório usado pra visualizar
@@ -268,14 +372,60 @@ class MainWindow(QMainWindow):
 def main():
     app = QApplication([])
 
-    file = Path('/mnt/seagate/workspace/coding/experimental/exp-sorted-py/testei/eumerlyteste.json')
-    #file = None
+    #file = Path('/mnt/seagate/workspace/coding/experimental/exp-sorted-py/testei/eumerlyteste.json')
+    file = None
 
-    root = Path('/mnt/seagate/workspace/coding/experimental/exp-sorted-py/testei')
-
-    main_window = MainWindow(file, root)
+    main_window = MainWindow(file)
     main_window.show()
 
     app.exec()
 
 main()
+
+
+
+
+
+
+
+
+
+# sidebar
+# s_widget = QWidget()
+# sidebar = QVBoxLayout(s_widget)
+
+# model = QFileSystemModel()
+# model.setRootPath('/mnt/seagate/workspace/coding/experimental/exp-sorted-py/testei')
+
+# #tree = QTreeWidget()
+# tree = QTreeView()
+# tree.setModel(model)
+
+# tree.setRootIndex(model.index('/mnt/seagate/workspace/coding/experimental/exp-sorted-py/testei'))
+
+# tree.setHeaderHidden(True)
+# tree.setColumnWidth(0, 100)
+# tree.hideColumn(1)
+# tree.hideColumn(2)
+# tree.hideColumn(3)
+
+# sidebar.addWidget(tree)
+
+# layout.addWidget(s_widget)
+
+
+
+
+
+
+
+
+
+
+
+# hbox_search = QHBoxLayout()
+# input_search = QLineEdit()
+# button_search = QPushButton('Search')
+# hbox_search.addWidget(input_search)
+# hbox_search.addWidget(button_search)
+# contents.addLayout(hbox_search)
