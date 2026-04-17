@@ -5,6 +5,38 @@ import string
 
 from .. import logger
 
+
+class Vault:
+    def __init__(self, root: Path):
+        """
+        define e cria o diretório oculto do vault
+
+        root: /path/do/vault
+        context: /path/do/vault/.sorted
+        """
+
+        self.root = root
+        ensure_directory(self.root)
+
+        self.context = self.root / '.sorted'
+        ensure_directory(self.context)
+    
+    # TODO: separar um cache pra cada plugin pra n precisar de um dir extra de cache
+    @property
+    def cache_dir(self):
+        path = self.context / 'cache'
+        ensure_directory(path)
+        
+        return path
+    
+    @property
+    def cache_file(self):
+        return self.context / 'cache.json'
+
+
+def ensure_directory(directory: Path):
+    directory.mkdir(exist_ok=True, parents=True)
+
 def truncate_text(text: str, max_characters: int):
     if len(text) > max_characters:
         # se o texto passado for realmente maior do que o permitido,

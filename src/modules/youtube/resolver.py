@@ -1,5 +1,4 @@
 from urllib.parse import urlparse, parse_qs
-import requests
 
 import api
 
@@ -38,7 +37,7 @@ def handle_video_id_extraction(url: str, ytdl: YoutubeDL):
     # se não conseguir o id só pelo regex, tenta com o yt-dlp
     if not _id:
         logger.warning('erro ao extrair id com regex. tentando novamente com a api do yt-dlp')
-        video_data = extract_video_info(url, ytdl)
+        video_data = api.extract_video_info(url, ytdl)
         _id = video_data.get('id')
     
     if not _id:

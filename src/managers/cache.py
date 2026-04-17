@@ -1,113 +1,53 @@
 from pathlib import Path
 
-from ..services import youtube
+from ..utils.generic import Vault, ensure_directory, normalize_json_file
 from ..utils import json_io
-from ..utils.generic import normalize_json_file
 from .. import logger
-from .collections.utils import Entry, ServiceMetadata, Video, is_collection_valid
-from .settings import CACHE_DIRECTORY
 
-PATHS = normalize_json_file(CACHE_DIRECTORY / 'paths')
+class VaultCache:
+    def __init__(self, vault: Vault):
+        self.vault = vault
+        self.cache_file = vault.context / normalize_json_file('cache')
+        self.data = self.load()
 
-def insert_on_cache(resolvable_id: str, data: dict, cache_file: Path):
-    cache = json_io.read_json(cache_file)
+    def load(self):
+        return json_io.read_json(self.cache_file)
 
-    # previnir valores nulos de entrarem no cache
-    if not cache or not data or not resolvable_id:
-        return
+class GlobalCache:
+    def __init__(self):
+        self.cache_file = self.get_cache_dir() / normalize_json_file('global-cache')
+        self.data = self.load()
 
-    # escrever os dados no cache usando o resolvable id como chave
-    cache[resolvable_id] = data
-    json_io.write_json(file=cache_file, data=cache)
+    def load(self):
+        return json_io.read_json(self.cache_file)
 
-    logger.success(f'informação escrita no cache: {resolvable_id}')
-
-def get_video(service_metadata: ServiceMetadata) -> Video | None:
-    service_name = service_metadata.service_name
-    resolvable_id = service_metadata.resolvable_id
+    @staticmethod
+    def get_cache_dir() -> Path:
+        cache_dir = Path.home() / '.cache' / 'sorted'
+        ensure_directory(cache_dir)
     
-    cache_file = normalize_json_file(CACHE_DIRECTORY / service_name / 'videos')
-    cache_file.parent.mkdir(exist_ok=True, parents=True)
+        return cache_dir
 
-    cache_data = json_io.read_json(cache_file)
-    entry_data = cache_data.get(resolvable_id)
+    @property
+    def last_accessed_vault(self) -> Path | None:
+        raw_path = self.data.get('last-accessed-vault')
+        vault = None
 
-    if service_name == 'youtube':
-        # obter o vídeo já do cache ou inserir ele em tempo de exeução
-        # caso ele não seja encontrado
-        if entry_data:
-            return youtube.video_from_dict(entry_data)
+        if raw_path is not None:
+            vault = Path(raw_path)
         else:
-            ytdl = youtube.instance_ytdl()
+            return
+
+        if not vault.is_dir():
+            logger.error(f'{vault} existe, mas não é um diretório')
+            return
         
-            url = youtube.build_youtube_url(resolvable_id)
-            info = youtube.extract_video_info(url, ytdl)
-            
-            insert_on_cache(
-                resolvable_id=resolvable_id,
-                data=info,
-                cache_file=cache_file
-            )
-            return youtube.video_from_dict(info)
+        return vault
     
-    return None
-
-def get_paths() -> dict:
-    return json_io.read_json(PATHS)
-
-def get_last_root() -> Path:
-    """
-    retorna o último root usado (caso ele esteja presente no cache)
-    se não estiver, retorna a home padrão do sistema como root
-    
-    ambos os caminhos são transformados em absolutos com .resolve()
-    """
-
-    data = get_paths()
-    raw = data.get('last-root')
-    
-    if not raw:
-        return Path.home().resolve()
-
-    root = Path(raw)
-
-    if not root.is_dir():
-        return Path.home().resolve()
-
-    return root.resolve()
-
-def get_last_collection() -> Path | None:
-    """
-    retorna a última collection aberta
-    """
-
-    data = get_paths()
-    raw = data.get('last-collection')
-
-    # Path só deve ser chamado depois da verificação
-    # porque ele pode ainda não existir no cache e quebrar    
-    if not raw:
-        return None
-    
-    collection = Path(raw)
-
-    if not is_collection_valid(collection):
-        return None
-
-    return collection.resolve()
-
-def write_last_root(root: Path):
-    """
-    grava no cache qual foi o último root acessado
-    """
-
-    data = get_paths()
-    data['last-root'] = str(root.resolve())
-
-    json_io.write_json(PATHS, data)
-
-def write_last_collection(collection: Path):
-    data = get_paths()
-    data['last-collection'] = str(collection.resolve())
-
-    json_io.write_json(PATHS, data)
+    def write_last_accessed_vault(self, root: Path):
+        if not root.is_dir():
+            logger.error(f'{root} não é um diretório')
+            return
+        
+        self.data['last-accessed-vault'] = str(root.resolve())
+        json_io.write_json(self.cache_file, self.data)

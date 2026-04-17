@@ -1,3 +1,5 @@
+import requests
+
 from yt_dlp import YoutubeDL
 
 def instance_ytdl(options: dict | None = None) -> YoutubeDL:

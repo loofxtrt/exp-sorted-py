@@ -5,6 +5,7 @@ import formatting
 
 @dataclass
 class Video:
+    resolvable_id: str
     title: str
     description: str
     uploader: str
@@ -12,14 +13,22 @@ class Video:
     duration: int
     upload_date: str
 
-    def __post_init__(self):
-        self.view_count = formatting.format_view_count(self.view_count)
-        self.duration = formatting.format_duration(self.duration)
-        self.upload_date = formatting.format_upload_date(self.upload_date)
+    @property
+    def view_count_formatted(self):
+        return formatting.format_view_count(self.view_count)
+
+    @property
+    def duration_formatted(self):
+        return formatting.format_duration(self.duration)
     
+    @property
+    def upload_date_formatted(self):
+        return formatting.format_upload_date(self.upload_date)
+
     @classmethod
     def from_dict(cls, data: dict):
         return cls(
+            resolvable_id=data.get('id'),
             title=data.get('title'),
             description=data.get('description'),
             uploader=data.get('uploader'),
