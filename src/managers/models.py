@@ -136,7 +136,7 @@ class Collection:
 
         return cls(
                 id=data.get('id'),
-                version=v.get('version'),
+                version=data.get('version'),
                 created_at=data.get('created_at'),
                 entries=entries
             )
