@@ -1,8 +1,9 @@
 from dataclasses import dataclass
 from pathlib import Path
 
-from ..utils.generic import ensure_directory
+from ..utils.generic import ensure_directory, normalize_json_file
 from ..utils import json_io
+from .cache import VaultCache
 
 
 class Vault:
@@ -19,6 +20,15 @@ class Vault:
 
         self.context = self.root / '.sorted'
         ensure_directory(self.context)
+
+        self.cache = VaultCache(self)
+    
+    @property
+    def modules_dir(self):
+        path = self.context / 'modules'
+        ensure_directory(path)
+
+        return
     
     # TODO: separar um cache pra cada plugin pra n precisar de um dir extra de cache
     @property
@@ -30,7 +40,7 @@ class Vault:
     
     @property
     def cache_file(self):
-        return self.context / 'cache.json'
+        return self.context / normalize_json_file('cache')
 
 
 @dataclass
@@ -82,3 +92,16 @@ class Collection:
     def from_file(cls, file: Path):
         data = json_io.read_json(file)
         return cls.from_dict(data)
+
+class Module:
+    def __init__(self, module_root: Path, vault: Vault):
+        self.root = module_root
+        if not self.root.is_dir():
+            return
+        
+        manifest_file = self.root / normalize_json_file('manifest')
+        if not manifest_file:
+            return
+        
+        manifest_data = json_io.read_json(manifest_file)
+        self.id = manifest_data.get('id')

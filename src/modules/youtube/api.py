@@ -2,6 +2,12 @@ import requests
 
 from yt_dlp import YoutubeDL
 
+
+SETTINGS = {
+    'quiet': True,
+    'skip_download': True
+}
+
 def instance_ytdl(options: dict | None = None) -> YoutubeDL:
     """
     se o ytdl for ser usado duas vezes numa mesma função, a instância retornada
@@ -9,16 +15,8 @@ def instance_ytdl(options: dict | None = None) -> YoutubeDL:
 
     se isso já tiver sido chamado uma vez, a função retorna a instância já existente
     """
-
-    global _ytdl
-
-    if _ytdl is None:
-        if options is None:
-            options = settings.get('ytdl-options')
-
-        _ytdl = YoutubeDL(options)
     
-    return _ytdl
+    return YoutubeDL(options)
 
 def extract_video_info(url: str, ytdl: YoutubeDL) -> dict | None :
     """
@@ -34,7 +32,7 @@ def extract_video_info(url: str, ytdl: YoutubeDL) -> dict | None :
     """
     
     try:
-        info = ytdl.extract_info(url, download=False)
+        return ytdl.extract_info(url, download=False)
     except Exception as err:
         logger.error(f'erro ao tentar extrair os dados do vídeo {url}: {err}')
         return None

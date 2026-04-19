@@ -153,12 +153,18 @@ class MainWindow(QMainWindow):
         
         entries = self.collection.entries
         for e in entries:
-            item, widget = builder.build_video_entry('lorem ipsum', e.id)
-        
-            self.qlist.addItem(item)
-            self.qlist.setItemWidget(item, widget)
+            if e.module == 'youtube' and e.type == 'video':
+                # espera o result em vez de desenpacotar de uma vez
+                # pra não quebrar com 'cannot unpack non-iterable NoneType object'
+                result = builder.build_video_entry(e)
+                if not result:
+                    continue
+                item, widget = result
+            
+                self.qlist.addItem(item)
+                self.qlist.setItemWidget(item, widget)
 
-            print('adicionado')
+                print('adicionado')
 
     def load_info_labels(self):
         # atualiza os dados exibidos sobre a collection
