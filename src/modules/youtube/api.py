@@ -4,10 +4,12 @@ from yt_dlp import YoutubeDL
 
 from ... import logger
 
+
 SETTINGS = {
     'quiet': True,
     'skip_download': True
 }
+
 
 def instance_ytdl(options: dict | None = None) -> YoutubeDL:
     """
@@ -38,6 +40,10 @@ def extract_video_info(url: str, ytdl: YoutubeDL) -> dict | None :
         logger.error(f'erro ao tentar extrair os dados do vídeo {url}: {err}')
         return None
 
-def download_thumbnail(image_url: str):
+def download_thumbnail_bytes(image_url: str) -> bytes | None:
     response = requests.get(image_url)
-    return response
+    
+    if response.status_code != 200:
+        return None
+    
+    return response.content

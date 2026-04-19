@@ -28,7 +28,7 @@ class Vault:
         path = self.context / 'modules'
         ensure_directory(path)
 
-        return
+        return path
     
     # TODO: separar um cache pra cada plugin pra n precisar de um dir extra de cache
     @property
@@ -95,15 +95,20 @@ class Collection:
         data = json_io.read_json(file)
         return cls.from_dict(data)
 
+
 class Module:
-    def __init__(self, module_root: Path, vault: Vault):
-        self.root = module_root
-        if not self.root.is_dir():
-            return
+    def __init__(self, id: str, vault: Vault):
+        self.id = id
+        self.vault = vault
+
+        self.root = self.vault.modules_dir / id
+        ensure_directory(self.root)
         
-        manifest_file = self.root / normalize_json_file('manifest')
-        if not manifest_file.is_file():
-            return
-        
-        manifest_data = json_io.read_json(manifest_file)
-        self.id = manifest_data.get('id')
+        self.manifest_file = self.root / normalize_json_file('manifest')
+        self.manifest_data = self.load_manifest()
+    
+    def load_manifest(self):
+        if not self.manifest_file.is_file():
+            return {}
+    
+        return json_io.read_json(self.manifest_file)

@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 
 from numerize.numerize import numerize
 
+
 def build_youtube_url(video_id: str):
     """
     reconstrói uma url do youtube a partir do id de um vídeo

@@ -11,7 +11,7 @@ from PyQt6.QtGui import QFileSystemModel, QFont, QIcon, QPixmap
 from PyQt6.QtCore import Qt, QSize
 
 from ..managers.models import Collection, Vault
-from ..modules.youtube.main import Module
+from ..modules.youtube.main import YouTubeModule
 
 
 class MainWindow(QMainWindow):
@@ -19,7 +19,7 @@ class MainWindow(QMainWindow):
         super().__init__()
 
         # FIXME: TEMPORÁRIO
-        self.youtube = Module(Vault(root))
+        self.youtube = YouTubeModule(vault=Vault(root))
         
         # dados e api
         self.scol = scol

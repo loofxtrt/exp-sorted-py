@@ -1,21 +1,23 @@
 from PyQt6.QtWidgets import QListWidgetItem, QTableWidgetItem, QWidget, QLabel, QVBoxLayout, QHBoxLayout
+from PyQt6.QtGui import QPixmap
 from PyQt6.QtCore import Qt
 
 from . import cache
 from .models import Video
-from .api import extract_video_info, instance_ytdl
-# from .resolver import build_youtube_url, resolve_get_video
 from .utils import build_youtube_url
-from ...managers.models import Entry, Vault
+from .api import extract_video_info, instance_ytdl
+from ...utils.generic import ensure_directory, normalize_json_file
+from ...managers.models import Entry, Vault, Module
 
 
-class Module:
+class YouTubeModule(Module):
     def __init__(self, vault: Vault):
-        self.vault = vault
+        super().__init__(id='youtube', vault=vault)
+
         self.ytdl = instance_ytdl()
 
     def get_video(self, video_id: str):
-        cached = cache.get_data_from_cache(video_id, self.vault)
+        cached = cache.get_video_from_cache(video_id, self.vault)
         if cached:
             return cached
 
@@ -26,11 +28,29 @@ class Module:
         
         data = Video.normalize_ytdl_data(data)
 
-        cache.write_data_to_cache(data, self.vault)
+        cache.write_video_to_cache(data, self.vault)
         return data
+    
+    def get_thumbnail(self, video_data: dict):
+        def search_cached_thumbnail(video_id: str):
+            return cache._get_thumbnail_path(video_id, self.vault)
+        
+        video_id = video_data.get('id')
+        
+        thumb = search_cached_thumbnail(video_id)
+        if thumb.is_file():
+            return thumb
+
+        cache.download_thumbnail_to_cache(video_data, self.vault)
+        
+        thumb = search_cached_thumbnail(video_id)
+        if thumb.is_file():
+            return thumb
 
     def build_entry_widget(self, entry: Entry):
-        data = self.get_video(video_id=entry.reference)
+        video_id = entry.reference
+
+        data = self.get_video(video_id)
         if not data:
             return
         
@@ -41,6 +61,11 @@ class Module:
         layout = QHBoxLayout()
         widget = QWidget()
         widget.setLayout(layout)
+
+        thumb_label = QLabel()
+        pixmap = QPixmap(str(self.get_thumbnail(data)))
+        thumb_label.setPixmap(pixmap.scaled(120, 90, Qt.AspectRatioMode.KeepAspectRatio))
+        layout.addWidget(thumb_label)
         
         labels = [
             QLabel(video.title),
