@@ -7,9 +7,30 @@ from .. import logger
 
 
 def ensure_directory(directory: Path):
+    """
+    garante que um diretório exista no sistema de arquivos
+
+    se o diretório não existir, ele é criado junto com todos os pais necessários
+
+    args:
+        directory:
+            caminho do diretório que deve ser verificado/criado
+    """
+    
     directory.mkdir(exist_ok=True, parents=True)
 
 def truncate_text(text: str, max_characters: int):
+    """
+    corta um texto caso ele ultrapasse um limite de caracteres
+
+    args:
+        text:
+            texto original que pode ou não ser reduzido
+
+        max_characters:
+            limite máximo de caracteres permitido
+    """
+
     if len(text) > max_characters:
         # se o texto passado for realmente maior do que o permitido,
         # corta os caracteres do índice 0 até o limite e adiciona um sinalizador no final (ex: ...)
@@ -19,12 +40,20 @@ def truncate_text(text: str, max_characters: int):
     return text
 
 def get_iso_datetime():
+    """
+    retorna a data e hora atual baseada no formato iso 8601
+    """
+    
     # yyyy-mm-ddThh:mm:ss. o timespec é pra não incluir microsegundos
     return datetime.now().isoformat(timespec='seconds')
 
 def generate_random_id(id_length: int = 16):
     """
     gera um id usando todas as letras, numeros e alguns caracteres especiais
+
+    args:
+        id_length:
+            tamanho total do id gerado
     """
 
     # obter uma string com todas as letras do alfabeto (upper e lower)
@@ -42,6 +71,17 @@ def generate_random_id(id_length: int = 16):
     return final_id
 
 def normalize_json_file(path: Path | str):
+    """
+    garante que um nome de arquivo termine com extensão .json
+
+    se o caminho já tiver extensão json, nada é alterado
+    se não tiver, a extensão é adicionada automaticamente
+
+    args:
+        path:
+            caminho original que pode ser string ou Path
+    """
+
     # adicionar a extensão no caminho
     normalized = str(path)
     if not normalized.endswith('.json'):

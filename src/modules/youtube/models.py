@@ -5,6 +5,15 @@ from . import utils
 
 @dataclass
 class Video:
+    """
+    representa um vídeo do youtube dentro do sistema
+
+    essa classe serve como um modelo único pra padronizar os dados vindos da api
+    e facilitar o uso deles no resto do código (cache, ui, etc)
+
+    também inclui propriedades prontas pra formatar valores numéricos comuns
+    """
+
     id: str
     title: str
     description: str
@@ -15,6 +24,7 @@ class Video:
     like_count: int
     comment_count: int
     thumbnail: str
+    thumbnails: list[str]
 
     @property
     def view_count_formatted(self):
@@ -38,6 +48,20 @@ class Video:
     
     @staticmethod
     def normalize_ytdl_data(data: dict):
+        """
+        extrai e normaliza os dados crus vindos do youtube-dl
+
+        o yt-dlp retorna muitos, então serve pra filtrar o que é
+        realmente relevante nesse contexto 
+
+        args:
+            data:
+                dados crus vindos do youtube-dl
+
+        returns:
+            dicionário normalizado no formato interno do sistema
+        """
+
         return {
             'id': data.get('id'),
             'title': data.get('title'),
@@ -48,11 +72,23 @@ class Video:
             'upload_date': data.get('upload_date'),
             'like_count': data.get('like_count'),
             'comment_count': data.get('comment_count'),
-            'thumbnail': data.get('thumbnail')
+            'thumbnail': data.get('thumbnail'),
+            'thumbnails': data.get('thumbnails')
         }
 
     @classmethod
     def from_dict(cls, data: dict):
+        """
+        cria uma instância de Video a partir de um dicionário
+
+        args:
+            data:
+                dicionário com os dados do vídeo
+
+        returns:
+            instância de Video
+		"""
+
         return cls(
             id=data.get('id'),
             title=data.get('title'),
@@ -63,10 +99,16 @@ class Video:
             upload_date=data.get('upload_date'),
             like_count=data.get('like_count'),
             comment_count=data.get('comment_count'),
-            thumbnail=data.get('thumbnail')
+            thumbnail=data.get('thumbnail'),
+            thumbnails=data.get('thumbnails')
         )
     
     def to_dict(self):
+        """
+        converte a instância de Video de volta pra um dicionário
+        útil pra salvar no cache ou enviar pra outras partes do sistema
+        """
+
         return {
             'id': self.id,
             'title': self.title,
@@ -77,5 +119,6 @@ class Video:
             'upload_date': self.upload_date,
             'like_count': self.like_count,
             'comment_count': self.comment_count,
-            'thumbnail': self.thumbnail
+            'thumbnail': self.thumbnail,
+            'thumbnails': self.thumbnails
         }

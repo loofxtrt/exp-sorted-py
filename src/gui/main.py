@@ -14,6 +14,9 @@ from ..managers.models import Collection, Vault
 from ..modules.youtube.main import YouTubeModule
 
 
+# TODO: documentação
+
+
 class MainWindow(QMainWindow):
     def __init__(self, scol: Path, root: Path):
         super().__init__()

@@ -7,6 +7,17 @@ from .cache import VaultCache
 
 
 class Vault:
+    """
+    representa um vault de trabalho e gerencia sua estrutura interna
+
+    esta classe cria e organiza o diretório base do vault, incluindo o diretório oculto
+    de contexto (.sorted), além de expor caminhos úteis como modules e cache
+
+    args:
+        root:
+            diretório raiz do vault que será inicializado e garantido no sistema
+    """
+
     def __init__(self, root: Path):
         """
         define e cria o diretório oculto do vault
@@ -25,6 +36,11 @@ class Vault:
     
     @property
     def modules_dir(self):
+        """
+        retorna o diretório de módulos do vault
+        cria o diretório caso ainda não exista
+        """
+
         path = self.context / 'modules'
         ensure_directory(path)
 
@@ -33,6 +49,11 @@ class Vault:
     # TODO: separar um cache pra cada plugin pra n precisar de um dir extra de cache
     @property
     def cache_dir(self):
+        """
+        retorna o diretório de cache do vault
+        cria o diretório caso ainda não exista
+        """
+
         path = self.context / 'cache'
         ensure_directory(path)
         
@@ -40,11 +61,19 @@ class Vault:
     
     @property
     def cache_file(self):
+        """
+        retorna o arquivo de cache principal do vault
+        """
+        
         return self.context / normalize_json_file('cache')
 
 
 @dataclass
 class Entry:
+    """
+    representa uma entrada individual dentro de uma collection
+    """
+
     id: str
     created_at: str
     module: str
@@ -54,6 +83,11 @@ class Entry:
 
 @dataclass
 class Collection:
+    """
+    representa uma collection carregada de um arquivo
+    essa estrutura agrupa entries e metadados associados
+    """
+
     id: str
     version: str
     created_at: str
@@ -62,15 +96,32 @@ class Collection:
 
     @property
     def name(self):
+        """
+        retorna o nome da collection
+        isso é sempre o nome do arquivo sem a extensão
+        """
+        
         return 'lorem ipsum'
         # return self.file.stem
 
     @property
     def entry_count(self):
+        """
+        retorna a quantidade de entradas na collection
+        """
+
         return len(self.entries)
 
     @classmethod
     def from_dict(cls, data: dict):
+        """
+        cria uma collection a partir de um dicionário
+
+        args:
+            data:
+                dicionário contendo os dados da collection e suas entries
+        """
+        
         entries = []
         for v in data.get('entries', {}).values():
             entries.append(
@@ -92,12 +143,50 @@ class Collection:
     
     @classmethod
     def from_file(cls, file: Path):
+        """
+        carrega uma collection a partir de um arquivo
+        esse arquivo deve ser um json (com extensão .json ou .scol)
+
+        args:
+            file:
+                caminho do arquivo de collection
+        """
+        
+        # TODO: validação mais rigorosa com base na chave type
         data = json_io.read_json(file)
         return cls.from_dict(data)
 
 
 class Module:
+    """
+    representa um plugin dentro de um vault
+
+    um module é uma extensão isolada do sistema, usada pra adicionar
+    funcionalidades específicas (tipo integrações, renderizações, processamento de dados etc)
+    sem precisar mexer no core da aplicação
+
+    cada module vive dentro do seu próprio diretório no vault, onde pode guardar arquivos,
+    cache, configs e um manifesto com dados persistentes
+
+    a ideia é permitir que funcionalidades sejam plugáveis, removíveis e independentes,
+    sem quebrar o resto do sistema
+
+    args:
+        id:
+            nome único do plugin dentro do vault (ex: "youtube", "notes", etc)
+
+        vault:
+            instância do Vault onde esse plugin está rodando
+    """
+
     def __init__(self, id: str, vault: Vault):
+        """
+        inicializa o plugin e garante que a estrutura dele existe no disco
+
+        cada module cria uma pasta própria dentro de vault.modules_dir pra armazenar
+        dados, cache e arquivos internos
+        """
+
         self.id = id
         self.vault = vault
 
@@ -108,6 +197,16 @@ class Module:
         self.manifest_data = self.load_manifest()
     
     def load_manifest(self):
+        """
+        carrega o manifesto do plugin
+
+        o manifesto é basicamente um json com infos persistentes do module,
+        tipo versão, configs e outros dados que precisam sobreviver entre execuções
+
+        returns:
+            dicionário com os dados do manifesto, ou vazio se ainda não existir
+        """
+
         if not self.manifest_file.is_file():
             return {}
     
