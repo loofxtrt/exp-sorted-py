@@ -2,6 +2,7 @@ import requests
 
 from yt_dlp import YoutubeDL
 
+from ... import logger
 
 SETTINGS = {
     'quiet': True,

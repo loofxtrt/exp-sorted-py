@@ -22,9 +22,9 @@ def format_upload_date(upload_date: str):
     # (https://docs.python.org/3/library/datetime.html#strftime-and-strptime-behavior)
     return datetime.strftime(upload_date, '%b %-d, %Y').capitalize()
 
-def format_view_count(view_count: int):
+def format_count(count: int):
     # transforma 1.243 em 1K
-    return numerize(view_count, decimals=0)
+    return numerize(count, decimals=0)
 
 def format_duration(seconds: int):
     duration = str(timedelta(seconds=seconds)) # hh:mm:ss

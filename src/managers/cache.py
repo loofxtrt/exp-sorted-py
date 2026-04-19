@@ -30,7 +30,7 @@ class GlobalCache:
 
     @property
     def last_accessed_vault(self) -> Path | None:
-        raw_path = self.data.get('last-accessed-vault')
+        raw_path = self.data.get('last_accessed_vault')
         vault = None
 
         if raw_path is not None:
@@ -49,5 +49,5 @@ class GlobalCache:
             logger.error(f'{root} não é um diretório')
             return
         
-        self.data['last-accessed-vault'] = str(root.resolve())
+        self.data['last_accessed_vault'] = str(root.resolve())
         json_io.write_json(self.cache_file, self.data)

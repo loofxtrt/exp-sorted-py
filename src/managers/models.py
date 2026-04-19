@@ -55,6 +55,7 @@ class Entry:
 @dataclass
 class Collection:
     id: str
+    version: str
     created_at: str
     entries: list[Entry]
     # file: Path
@@ -75,7 +76,7 @@ class Collection:
             entries.append(
                 Entry(
                     id=v.get('id'),
-                    created_at=v.get('created-at'),
+                    created_at=v.get('created_at'),
                     module=v.get('module'),
                     type=v.get('type'),
                     reference=v.get('reference')
@@ -84,7 +85,8 @@ class Collection:
 
         return cls(
                 id=data.get('id'),
-                created_at=data.get('created-at'),
+                version=v.get('version'),
+                created_at=data.get('created_at'),
                 entries=entries
             )
     
