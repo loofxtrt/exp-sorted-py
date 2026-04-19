@@ -1,13 +1,13 @@
 from pathlib import Path
 
-from ..utils.generic import Vault, ensure_directory, normalize_json_file
+from ..utils.generic import ensure_directory, normalize_json_file
 from ..utils import json_io
 from .. import logger
 
 class VaultCache:
-    def __init__(self, vault: Vault):
-        self.vault = vault
-        self.cache_file = vault.context / normalize_json_file('cache')
+    def __init__(self, context: Path):
+        self.context = context
+        self.cache_file = self.context / normalize_json_file('cache')
         self.data = self.load()
 
     def load(self):

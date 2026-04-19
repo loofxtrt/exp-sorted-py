@@ -21,7 +21,7 @@ class Vault:
         self.context = self.root / '.sorted'
         ensure_directory(self.context)
 
-        self.cache = VaultCache(self)
+        self.cache = VaultCache(self.context)
     
     @property
     def modules_dir(self):
@@ -100,7 +100,7 @@ class Module:
             return
         
         manifest_file = self.root / normalize_json_file('manifest')
-        if not manifest_file:
+        if not manifest_file.is_file():
             return
         
         manifest_data = json_io.read_json(manifest_file)

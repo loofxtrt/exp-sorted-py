@@ -10,14 +10,17 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtGui import QFileSystemModel, QFont, QIcon, QPixmap
 from PyQt6.QtCore import Qt, QSize
 
-from ..managers.models import Collection
-from ..modules.youtube import builder
+from ..managers.models import Collection, Vault
+from ..modules.youtube.main import Module
 
 
 class MainWindow(QMainWindow):
     def __init__(self, scol: Path, root: Path):
         super().__init__()
 
+        # FIXME: TEMPORÁRIO
+        self.youtube = Module(Vault(root))
+        
         # dados e api
         self.scol = scol
         self.collection = Collection.from_file(self.scol)
@@ -153,10 +156,11 @@ class MainWindow(QMainWindow):
         
         entries = self.collection.entries
         for e in entries:
+            # FIXME: TEMPORÁRIO
             if e.module == 'youtube' and e.type == 'video':
                 # espera o result em vez de desenpacotar de uma vez
                 # pra não quebrar com 'cannot unpack non-iterable NoneType object'
-                result = builder.build_video_entry(e)
+                result = self.youtube.build_entry_widget(e)
                 if not result:
                     continue
                 item, widget = result

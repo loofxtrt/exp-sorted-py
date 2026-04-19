@@ -2,6 +2,14 @@ from datetime import datetime, timedelta
 
 from numerize.numerize import numerize
 
+def build_youtube_url(video_id: str):
+    """
+    reconstrói uma url do youtube a partir do id de um vídeo
+    é majoritariamente usada quando um vídeo precisa ser passado pro yt-dlp
+    """
+
+    return f'https://www.youtube.com/watch?v={video_id}'
+
 def format_upload_date(upload_date: str):
     # a data do yt-dlp originalmente vem como a string '20251026'
     # pra manipular ela, primeiro precisa converter a string pra um formato de datetime

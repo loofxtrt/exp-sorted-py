@@ -1,11 +1,11 @@
 from dataclasses import dataclass
 
-from . import formatting
+from . import utils
 
 
 @dataclass
 class Video:
-    resolvable_id: str
+    id: str
     title: str
     description: str
     uploader: str
@@ -15,20 +15,32 @@ class Video:
 
     @property
     def view_count_formatted(self):
-        return formatting.format_view_count(self.view_count)
+        return utils.format_view_count(self.view_count)
 
     @property
     def duration_formatted(self):
-        return formatting.format_duration(self.duration)
+        return utils.format_duration(self.duration)
     
     @property
     def upload_date_formatted(self):
-        return formatting.format_upload_date(self.upload_date)
+        return utils.format_upload_date(self.upload_date)
+    
+    @staticmethod
+    def normalize_ytdl_data(data: dict):
+        return {
+            'id': data.get('id'),
+            'title': data.get('title'),
+            'description': data.get('description'),
+            'uploader': data.get('uploader'),
+            'view-count': data.get('view_count'),
+            'duration': data.get('duration'),
+            'upload-date': data.get('upload_date')
+        }
 
     @classmethod
     def from_dict(cls, data: dict):
         return cls(
-            resolvable_id=data.get('id'),
+            id=data.get('id'),
             title=data.get('title'),
             description=data.get('description'),
             uploader=data.get('uploader'),
@@ -39,6 +51,7 @@ class Video:
     
     def to_dict(self):
         return {
+            'id': self.id,
             'title': self.title,
             'description': self.description,
             'uploader': self.uploader,

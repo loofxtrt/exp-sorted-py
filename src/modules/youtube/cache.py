@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from ...utils.generic import Vault
+from ...managers.models import Vault
 from ...utils import json_io
 from ... import logger
 
@@ -18,7 +18,7 @@ def write_data_to_cache(data: dict, vault: Vault):
     existing_cache = json_io.read_json(cache_file)
     
     existing_cache[video_id] = data
-    json_io.write_json(file, data)
+    json_io.write_json(cache_file, existing_cache)
 
 def get_data_from_cache(video_id: str, vault: Vault) -> dict | None:
     cache_file = _get_cache_file(vault)

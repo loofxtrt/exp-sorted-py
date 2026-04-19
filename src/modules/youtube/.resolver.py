@@ -5,13 +5,7 @@ from . import cache
 from ...managers.models import Vault
 
 
-def build_youtube_url(video_id: str):
-    """
-    reconstrói uma url do youtube a partir do id de um vídeo
-    é majoritariamente usada quando um vídeo precisa ser passado pro yt-dlp
-    """
 
-    return f'https://www.youtube.com/watch?v={video_id}'
 
 def unstable_extract_video_id(url: str) -> str | None:
     if not url.startswith(('http://', 'https://')):
@@ -45,14 +39,3 @@ def handle_video_id_extraction(url: str, ytdl: YoutubeDL):
     if not _id:
         logger.error(f'nenhum método de extração de id funcionou com a url: {url}')
     return _id
-
-def resolve_get_video(video_id: str, vault: Vault):
-    cached = cache.get_data_from_cache(video_id, vault)
-    if cached:
-        return cached
-
-    ytdl = api.instance_ytdl()
-    url = build_youtube_url(video_id)
-    requested = api.extract_video_info(url, ytdl)
-    
-    return requested
