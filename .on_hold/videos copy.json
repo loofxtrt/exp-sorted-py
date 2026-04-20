@@ -1,0 +1,71 @@
+! confirmadamente 16:9
+? não tem bordas, mas também não é 16:9 perfeito
+x tem bordas e não é 16:9
+~ é 16:9, mas é só a versão webp de um png idêntico
+
+
+
+YouTube thumbnails seguem o padrão:
+https://i.ytimg.com/vi/VIDEO_ID/NOME_DA_THUMB.jpg
+
+Qualidade (principais):
+- default       → 120x90 (mínima)
+- mqdefault     → 320x180 (média)
+- hqdefault     → 480x360 (padrão)
+- sddefault     → 640x480 (SD)
+- hq720         → 1280x720 (HD)
+- maxresdefault → melhor possível (Full HD ou mais)
+
+Frames alternativos (não são a thumb oficial):
+- 0.jpg → frame principal
+- 1.jpg, 2.jpg, 3.jpg → outros frames automáticos
+- versões mq/hq/sd seguem a mesma lógica (mq1, hq2, etc)
+
+Formatos:
+- .jpg  → padrão
+- .webp → mais leve (mesma imagem)
+
+Outros:
+- ?sqp=... → versão processada (crop/compressão dinâmica)
+- preference → ordem de qualidade (definida pela API, não pelo YouTube)
+
+
+
+
+{
+    "cg-3ASSZPYY": {
+        "id": "cg-3ASSZPYY",
+        "title": "IGREJA DO SONO ETERNO: O analog horror do Brasil",
+        "description": "Clica em hypar???\n\nMEU INSTAGRAM :) \nhttps://www.instagram.com/emerly.web/\n\nSeja membro :) https://www.youtube.com/channel/UCnhvMmzagND_KPLNINn0gaA/join\n\nMEU OUTROS CANAIS:\n@eumerlylives \n@eumerly2 \n\nREDES:\nhttps://www.twitch.tv/e_merly\nhttps://www.tiktok.com/@e_merly\n\nSERVER DO CANAL:\nhttps://discord.gg/XFNbxYwcVj\n\nLINK DO CRIADOR ORIGINAL: https://www.tiktok.com/@channel.js\nCANAL CITADO: @QueZonaa \n\nEDITADO POR: @neitankk \n\n\n\n\n\nintrodução 0:00\ninício 0:36\nteoria/final  10:49",
+        "uploader": "eumerly",
+        "view_count": 345405,
+        "duration": 749,
+        "upload_date": "20250504",
+        "like_count": 19220,
+        "comment_count": 563,
+        "thumbnail": "https://i.ytimg.com/vi/cg-3ASSZPYY/maxresdefault.jpg",
+        "thumbnails": [
+            { !
+                "url": "https://i.ytimg.com/vi/cg-3ASSZPYY/mqdefault.jpg",
+                "height": 180,
+                "width": 320,
+                "preference": -11,
+                "id": "26",
+                "resolution": "320x180"
+            },
+            { !
+                "url": "https://i.ytimg.com/vi/cg-3ASSZPYY/hq720.jpg",
+                "preference": -3,
+                "id": "38"
+            },
+            { !
+                "url": "https://i.ytimg.com/vi/cg-3ASSZPYY/maxresdefault.jpg",
+                "height": 1080,
+                "width": 1920,
+                "preference": -1,
+                "id": "40",
+                "resolution": "1920x1080"
+            }
+        ]
+    }
+}

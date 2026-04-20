@@ -46,7 +46,8 @@ class YouTubeModule(Module):
         if not data:
             return
         
-        data = Video.normalize_ytdl_data(data)
+        # não precisa do normalize pq o cache já faz isso
+        # data = Video.normalize_ytdl_data(data)
 
         cache.write_video_to_cache(data, self.vault)
         return data

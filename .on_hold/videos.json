@@ -1,0 +1,287 @@
+! confirmadamente 16:9
+? não tem bordas, mas também não é 16:9 perfeito
+x tem bordas e não é 16:9
+~ é 16:9, mas é só a versão webp de um png idêntico
+
+
+
+YouTube thumbnails seguem o padrão:
+https://i.ytimg.com/vi/VIDEO_ID/NOME_DA_THUMB.jpg
+
+Qualidade (principais):
+- default       → 120x90 (mínima)
+- mqdefault     → 320x180 (média)
+- hqdefault     → 480x360 (padrão)
+- sddefault     → 640x480 (SD)
+- hq720         → 1280x720 (HD)
+- maxresdefault → melhor possível (Full HD ou mais)
+
+Frames alternativos (não são a thumb oficial):
+- 0.jpg → frame principal
+- 1.jpg, 2.jpg, 3.jpg → outros frames automáticos
+- versões mq/hq/sd seguem a mesma lógica (mq1, hq2, etc)
+
+Formatos:
+- .jpg  → padrão
+- .webp → mais leve (mesma imagem)
+
+Outros:
+- ?sqp=... → versão processada (crop/compressão dinâmica)
+- preference → ordem de qualidade (definida pela API, não pelo YouTube)
+
+
+
+
+{
+    "cg-3ASSZPYY": {
+        "id": "cg-3ASSZPYY",
+        "title": "IGREJA DO SONO ETERNO: O analog horror do Brasil",
+        "description": "Clica em hypar???\n\nMEU INSTAGRAM :) \nhttps://www.instagram.com/emerly.web/\n\nSeja membro :) https://www.youtube.com/channel/UCnhvMmzagND_KPLNINn0gaA/join\n\nMEU OUTROS CANAIS:\n@eumerlylives \n@eumerly2 \n\nREDES:\nhttps://www.twitch.tv/e_merly\nhttps://www.tiktok.com/@e_merly\n\nSERVER DO CANAL:\nhttps://discord.gg/XFNbxYwcVj\n\nLINK DO CRIADOR ORIGINAL: https://www.tiktok.com/@channel.js\nCANAL CITADO: @QueZonaa \n\nEDITADO POR: @neitankk \n\n\n\n\n\nintrodução 0:00\ninício 0:36\nteoria/final  10:49",
+        "uploader": "eumerly",
+        "view_count": 345405,
+        "duration": 749,
+        "upload_date": "20250504",
+        "like_count": 19220,
+        "comment_count": 563,
+        "thumbnail": "https://i.ytimg.com/vi/cg-3ASSZPYY/maxresdefault.jpg",
+        "thumbnails": [
+            { x
+                "url": "https://i.ytimg.com/vi/cg-3ASSZPYY/3.jpg",
+                "preference": -37,
+                "id": "0"
+            },
+            { x
+                "url": "https://i.ytimg.com/vi_webp/cg-3ASSZPYY/3.webp",
+                "preference": -36,
+                "id": "1"
+            },
+            { x
+                "url": "https://i.ytimg.com/vi/cg-3ASSZPYY/2.jpg",
+                "preference": -35,
+                "id": "2"
+            },
+            { x
+                "url": "https://i.ytimg.com/vi_webp/cg-3ASSZPYY/2.webp",
+                "preference": -34,
+                "id": "3"
+            },
+            { x
+                "url": "https://i.ytimg.com/vi/cg-3ASSZPYY/1.jpg",
+                "preference": -33,
+                "id": "4"
+            },
+            { x
+                "url": "https://i.ytimg.com/vi_webp/cg-3ASSZPYY/1.webp",
+                "preference": -32,
+                "id": "5"
+            },
+            { x
+                "url": "https://i.ytimg.com/vi/cg-3ASSZPYY/mq3.jpg",
+                "preference": -31,
+                "id": "6"
+            },
+            { x
+                "url": "https://i.ytimg.com/vi_webp/cg-3ASSZPYY/mq3.webp",
+                "preference": -30,
+                "id": "7"
+            },
+            { x
+                "url": "https://i.ytimg.com/vi/cg-3ASSZPYY/mq2.jpg",
+                "preference": -29,
+                "id": "8"
+            },
+            { x
+                "url": "https://i.ytimg.com/vi_webp/cg-3ASSZPYY/mq2.webp",
+                "preference": -28,
+                "id": "9"
+            },
+            { x
+                "url": "https://i.ytimg.com/vi/cg-3ASSZPYY/mq1.jpg",
+                "preference": -27,
+                "id": "10"
+            },
+            { x
+                "url": "https://i.ytimg.com/vi_webp/cg-3ASSZPYY/mq1.webp",
+                "preference": -26,
+                "id": "11"
+            },
+            { x
+                "url": "https://i.ytimg.com/vi/cg-3ASSZPYY/hq3.jpg",
+                "preference": -25,
+                "id": "12"
+            },
+            { x
+                "url": "https://i.ytimg.com/vi_webp/cg-3ASSZPYY/hq3.webp",
+                "preference": -24,
+                "id": "13"
+            },
+            { x
+                "url": "https://i.ytimg.com/vi/cg-3ASSZPYY/hq2.jpg",
+                "preference": -23,
+                "id": "14"
+            },
+            { x
+                "url": "https://i.ytimg.com/vi_webp/cg-3ASSZPYY/hq2.webp",
+                "preference": -22,
+                "id": "15"
+            },
+            { x
+                "url": "https://i.ytimg.com/vi/cg-3ASSZPYY/hq1.jpg",
+                "preference": -21,
+                "id": "16"
+            },
+            { x
+                "url": "https://i.ytimg.com/vi_webp/cg-3ASSZPYY/hq1.webp",
+                "preference": -20,
+                "id": "17"
+            },
+            { x
+                "url": "https://i.ytimg.com/vi/cg-3ASSZPYY/sd3.jpg",
+                "preference": -19,
+                "id": "18"
+            },
+            { x
+                "url": "https://i.ytimg.com/vi_webp/cg-3ASSZPYY/sd3.webp",
+                "preference": -18,
+                "id": "19"
+            },
+            { x
+                "url": "https://i.ytimg.com/vi/cg-3ASSZPYY/sd2.jpg",
+                "preference": -17,
+                "id": "20"
+            },
+            { x
+                "url": "https://i.ytimg.com/vi_webp/cg-3ASSZPYY/sd2.webp",
+                "preference": -16,
+                "id": "21"
+            },
+            { x
+                "url": "https://i.ytimg.com/vi/cg-3ASSZPYY/sd1.jpg",
+                "preference": -15,
+                "id": "22"
+            }, 
+            { x
+                "url": "https://i.ytimg.com/vi_webp/cg-3ASSZPYY/sd1.webp",
+                "preference": -14,
+                "id": "23"
+            },
+            { x
+                "url": "https://i.ytimg.com/vi/cg-3ASSZPYY/default.jpg",
+                "height": 90,
+                "width": 120,
+                "preference": -13,
+                "id": "24",
+                "resolution": "120x90"
+            },
+            { x
+                "url": "https://i.ytimg.com/vi_webp/cg-3ASSZPYY/default.webp",
+                "preference": -12,
+                "id": "25"
+            },
+            { !
+                "url": "https://i.ytimg.com/vi/cg-3ASSZPYY/mqdefault.jpg",
+                "height": 180,
+                "width": 320,
+                "preference": -11,
+                "id": "26",
+                "resolution": "320x180"
+            },
+            { ~
+                "url": "https://i.ytimg.com/vi_webp/cg-3ASSZPYY/mqdefault.webp",
+                "preference": -10,
+                "id": "27"
+            },
+            { x
+                "url": "https://i.ytimg.com/vi/cg-3ASSZPYY/0.jpg",
+                "preference": -9,
+                "id": "28"
+            },
+            { x
+                "url": "https://i.ytimg.com/vi_webp/cg-3ASSZPYY/0.webp",
+                "preference": -8,
+                "id": "29"
+            },
+            { ?
+                "url": "https://i.ytimg.com/vi/cg-3ASSZPYY/hqdefault.jpg?sqp=-oaymwEbCKgBEF5IVfKriqkDDggBFQAAiEIYAXABwAEG&rs=AOn4CLB--DaJ4g9B8v4Zmd9E2C_9tuJSag",
+                "height": 94,
+                "width": 168,
+                "preference": -7,
+                "id": "30",
+                "resolution": "168x94"
+            },
+            { ?
+                "url": "https://i.ytimg.com/vi/cg-3ASSZPYY/hqdefault.jpg?sqp=-oaymwEbCMQBEG5IVfKriqkDDggBFQAAiEIYAXABwAEG&rs=AOn4CLBiMhKrtNLJsWn5E9pp4SkTJbknSQ",
+                "height": 110,
+                "width": 196,
+                "preference": -7,
+                "id": "31",
+                "resolution": "196x110"
+            },
+            { ?
+                "url": "https://i.ytimg.com/vi/cg-3ASSZPYY/hqdefault.jpg?sqp=-oaymwEcCPYBEIoBSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLCZFSo954G6sAvvKWLbvCK7t9x_1w",
+                "height": 138,
+                "width": 246,
+                "preference": -7,
+                "id": "32",
+                "resolution": "246x138"
+            },
+            { ?
+                "url": "https://i.ytimg.com/vi/cg-3ASSZPYY/hqdefault.jpg?sqp=-oaymwEcCNACELwBSFXyq4qpAw4IARUAAIhCGAFwAcABBg==&rs=AOn4CLD213fAIk9MdQOQWP7x1WawHiteWQ",
+                "height": 188,
+                "width": 336,
+                "preference": -7,
+                "id": "33",
+                "resolution": "336x188"
+            },
+            { x
+                "url": "https://i.ytimg.com/vi/cg-3ASSZPYY/hqdefault.jpg",
+                "height": 360,
+                "width": 480,
+                "preference": -7,
+                "id": "34",
+                "resolution": "480x360"
+            },
+            {
+                "url": "https://i.ytimg.com/vi_webp/cg-3ASSZPYY/hqdefault.webp",
+                "preference": -6,
+                "id": "35"
+            },
+            { x
+                "url": "https://i.ytimg.com/vi/cg-3ASSZPYY/sddefault.jpg",
+                "height": 480,
+                "width": 640,
+                "preference": -5,
+                "id": "36",
+                "resolution": "640x480"
+            },
+            { x
+                "url": "https://i.ytimg.com/vi_webp/cg-3ASSZPYY/sddefault.webp",
+                "preference": -4,
+                "id": "37"
+            },
+            { !
+                "url": "https://i.ytimg.com/vi/cg-3ASSZPYY/hq720.jpg",
+                "preference": -3,
+                "id": "38"
+            },
+            { ~
+                "url": "https://i.ytimg.com/vi_webp/cg-3ASSZPYY/hq720.webp",
+                "preference": -2,
+                "id": "39"
+            },
+            { !
+                "url": "https://i.ytimg.com/vi/cg-3ASSZPYY/maxresdefault.jpg",
+                "height": 1080,
+                "width": 1920,
+                "preference": -1,
+                "id": "40",
+                "resolution": "1920x1080"
+            },
+            { ~
+                "url": "https://i.ytimg.com/vi_webp/cg-3ASSZPYY/maxresdefault.webp",
+                "preference": 0,
+                "id": "41"
+            }
+        ]
+    }
+}

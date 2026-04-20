@@ -135,11 +135,11 @@ class Collection:
             )
 
         return cls(
-                id=data.get('id'),
-                version=data.get('version'),
-                created_at=data.get('created_at'),
-                entries=entries
-            )
+            id=data.get('id'),
+            version=data.get('version'),
+            created_at=data.get('created_at'),
+            entries=entries
+        )
     
     @classmethod
     def from_file(cls, file: Path):

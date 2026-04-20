@@ -62,6 +62,28 @@ class Video:
             dicionário normalizado no formato interno do sistema
         """
 
+        thumbnails = []
+        for t in data.get('thumbnails'):
+            url = t.get('url')
+            resolution_name = None
+            
+            if '.webp' in url:
+                continue
+
+            if '/mqdefault' in url:
+                resolution_name = 'mqdefault'
+            elif '/maxresdefault' in url:
+                resolution_name = 'maxresdefault'
+            elif '/hq720' in url:
+                resolution_name = 'hq720'
+            
+            thumbnails.append(
+                {
+                    'url': url,
+                    'resolution_name': resolution_name
+                }
+            )
+
         return {
             'id': data.get('id'),
             'title': data.get('title'),
@@ -73,7 +95,7 @@ class Video:
             'like_count': data.get('like_count'),
             'comment_count': data.get('comment_count'),
             'thumbnail': data.get('thumbnail'),
-            'thumbnails': data.get('thumbnails')
+            'thumbnails': thumbnails
         }
 
     @classmethod

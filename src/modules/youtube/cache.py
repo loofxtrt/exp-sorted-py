@@ -44,7 +44,7 @@ def _get_thumbnail_path(video_id: str, vault: Vault):
     path = _get_cache_root(vault) / 'thumbnails'
     ensure_directory(path)
 
-    return path / f'{video_id}.png'
+    return path / f'{video_id}.jpg'
 
 def write_video_to_cache(data: dict, vault: Vault):
     """
@@ -104,7 +104,19 @@ def download_thumbnail_to_cache(video_data: dict, vault: Vault):
             instância do vault onde o arquivo vai ser salvo
     """
     
-    content = download_thumbnail_bytes(video_data.get('thumbnail'))
+    thumbnail_url = None
+    
+    thumbnails = video_data.get('thumbnails')
+    for t in thumbnails:
+        if t.get('resolution_name') == 'mqdefault':
+            logger.info('thumbnail pequena encontrada')
+            thumbnail_url = t.get('url')
+
+    if thumbnail_url is None:
+        logger.info('usando thumbnail padrão')
+        thumbnail_url = video_data.get('thumbnail')
+
+    content = download_thumbnail_bytes(thumbnail_url)
     if content:
         dest = _get_thumbnail_path(video_data.get('id'), vault)
         with dest.open('wb') as f:
