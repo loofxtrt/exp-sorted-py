@@ -77,8 +77,9 @@ class Video:
 
             if '/mqdefault' in url:
                 resolution_name = 'mqdefault'
-            elif '/maxresdefault' in url:
-                resolution_name = 'maxresdefault'
+            # maxres quase sempre é idêntico ao 'thumbnail' principal
+            # elif '/maxresdefault' in url:
+                # resolution_name = 'maxresdefault'
             # hq720 não tem diferença grande comparado ao maxres
             # na maioria das vezes, então por enquanto não precisa
             # elif '/hq720' in url:

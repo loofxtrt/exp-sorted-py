@@ -56,7 +56,7 @@ class YouTubeModule(Module):
         cache.write_video_to_cache(data, self.vault)
         newly_cached = cache.get_video_from_cache(video_id, self.vault)
 
-        return data
+        return newly_cached
     
     def get_thumbnail(self, video_data: dict):
         """

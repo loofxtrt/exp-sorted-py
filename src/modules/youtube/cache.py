@@ -123,9 +123,10 @@ def download_thumbnail_to_cache(video_data: dict, vault: Vault):
         if t.get('resolution_name') == 'mqdefault':
             logger.info('thumbnail mq encontrada')
             thumbnail_url = t.get('url')
-        elif t.get('resolution_name') == 'maxresdefault':
-            logger.info('thumbnail maxres encontrada')
-            thumbnail_url = t.get('url')
+        # maxres quase sempre é idêntico ao 'thumbnail' principal
+        # elif t.get('resolution_name') == 'maxresdefault':
+        #     logger.info('thumbnail maxres encontrada')
+        #     thumbnail_url = t.get('url')
 
     if thumbnail_url is None:
         logger.info('usando thumbnail padrão')
