@@ -96,6 +96,18 @@ def download_thumbnail_to_cache(video_data: dict, vault: Vault):
     baixa a thumbnail de um vídeo no cache local
     se o download dos bytes falhar, nada é salvo no disco
 
+    vai sempre tentar obter uma thumbnail com resolução menor
+    antes de ir pra maior como fallback
+
+    se não existir uma maior dentro da lista 'thumbnails',
+    usa a thumbnail principal como segundo fallback
+
+    É ESPERADO QUE ESSA LISTA JÁ TENHA SIDO NORMALIZADA PELO MODULO
+    E QUE NÃO SEJA A LISTA BRUTA QUE O YT-DLP RETORNA
+    
+    a principal e a maior normalmente já são as mesmas,
+    mas é seguro confiar na 'thumbnail' como fonte da verdade
+
     args:
         video_data:
             dados do vídeo contendo o id dele e a url da thumbnail
@@ -109,7 +121,10 @@ def download_thumbnail_to_cache(video_data: dict, vault: Vault):
     thumbnails = video_data.get('thumbnails')
     for t in thumbnails:
         if t.get('resolution_name') == 'mqdefault':
-            logger.info('thumbnail pequena encontrada')
+            logger.info('thumbnail mq encontrada')
+            thumbnail_url = t.get('url')
+        elif t.get('resolution_name') == 'maxresdefault':
+            logger.info('thumbnail maxres encontrada')
             thumbnail_url = t.get('url')
 
     if thumbnail_url is None:

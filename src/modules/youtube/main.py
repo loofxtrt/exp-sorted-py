@@ -47,9 +47,15 @@ class YouTubeModule(Module):
             return
         
         # não precisa do normalize pq o cache já faz isso
+        # mas tem que lembrar de atualizar, relendo ele depois
         # data = Video.normalize_ytdl_data(data)
 
+        # se não achar o vídeo, escreve ele no cache agora
+        # e depois ATUALIZA as informações lidas, pq o data antigo
+        # vai continuar sem ter o vídeo recém adicionado, então precisa reler
         cache.write_video_to_cache(data, self.vault)
+        newly_cached = cache.get_video_from_cache(video_id, self.vault)
+
         return data
     
     def get_thumbnail(self, video_data: dict):

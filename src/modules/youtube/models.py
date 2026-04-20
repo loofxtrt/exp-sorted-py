@@ -62,6 +62,11 @@ class Video:
             dicionário normalizado no formato interno do sistema
         """
 
+        # filtra as thumbnails mostrando só as relevantes
+        # e que tenham mudança perceptível de tamanho/qualidade
+        #
+        # thumbnails que são só frames do vídeo
+        # ou são só versões webp equivalentes a um png idêntico, não entram
         thumbnails = []
         for t in data.get('thumbnails'):
             url = t.get('url')
@@ -74,8 +79,13 @@ class Video:
                 resolution_name = 'mqdefault'
             elif '/maxresdefault' in url:
                 resolution_name = 'maxresdefault'
-            elif '/hq720' in url:
-                resolution_name = 'hq720'
+            # hq720 não tem diferença grande comparado ao maxres
+            # na maioria das vezes, então por enquanto não precisa
+            # elif '/hq720' in url:
+            #     resolution_name = 'hq720'
+            
+            if resolution_name is None:
+                continue
             
             thumbnails.append(
                 {
