@@ -10,12 +10,32 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtGui import QFileSystemModel, QFont, QIcon, QPixmap
 from PyQt6.QtCore import Qt, QSize
 
-from ..managers.models import Collection, Vault
+from ..utils.generic import generate_random_id, get_iso_datetime
+from ..managers.models import Collection, Vault, Entry
 from ..modules.youtube.main import YouTubeModule
+from ..modules.youtube.api import extract_video_info, instance_ytdl
 
 
 # TODO: documentação
 
+
+class Controller:
+    def __init__(self, collection: Collection):
+        self.collection = collection
+
+    def write_entry(self, module: str, type: str, reference: str):
+        entry = Entry(
+            id=generate_random_id(),
+            created_at=get_iso_datetime(),
+            module=module,
+            type=type,
+            reference=reference
+        )
+        self.collection.write_entry(entry)
+
+    def erase_entries(self, ids: list[str]):
+        for i in ids:
+            self.collection.erase_entry(i)
 
 class MainWindow(QMainWindow):
     def __init__(self, scol: Path, root: Path):
@@ -23,10 +43,12 @@ class MainWindow(QMainWindow):
 
         # FIXME: TEMPORÁRIO
         self.youtube = YouTubeModule(vault=Vault(root))
-        
+    
         # dados e api
         self.scol = scol
         self.collection = Collection.from_file(self.scol)
+        
+        self.controller = Controller(self.collection)
 
         # inputs
         self.button_insert = QPushButton('Insert')
@@ -163,7 +185,7 @@ class MainWindow(QMainWindow):
         self.qlist.clear()
         
         entries = self.collection.entries
-        for e in entries:
+        for e in entries.values():
             # FIXME: TEMPORÁRIO
             if e.module == 'youtube' and e.type == 'video':
                 # espera o result em vez de desenpacotar de uma vez
@@ -183,16 +205,17 @@ class MainWindow(QMainWindow):
         self.label_title.setText(self.collection.name)
         self.label_entry_count.setText(str(self.collection.entry_count))
     
+    def refresh(self):
+        self.load_list_contents()
+        self.load_info_labels()
+
     def get_selected_ids(self):
         items = self.qlist.selectedItems()
         return [i.data(Qt.ItemDataRole.UserRole) for i in items]
 
     def action_remove(self):
-        ids = self.get_selected_ids()
-        for i in ids:
-            manager.remove_entry(self.collection_file, i)
-        
-        self.load_table_contents()
+        self.controller.erase_entries(self.get_selected_ids())
+        self.refresh()
     
     def action_move(self):
         # promptar o caminho novo pra entrada
@@ -224,14 +247,15 @@ class MainWindow(QMainWindow):
     def action_insert(self):
         # obtém o conteúdo do input de texto e adiciona na collection
         value = self.input_insert.text()
-        videos.insert_youtube_video(
-            collection=self.collection_file,
-            ytdl=self.ytdl,
-            url=value
-        )
+        if not value:
+            return
+        
+        # FIXME: TEMPORÁRIO
+        info = extract_video_info(value, instance_ytdl())
+        
+        self.controller.write_entry(module='youtube', type='video', reference=info.get('id'))
+        self.refresh()
 
-        self.load_table_contents()
-    
     def action_change_collection(self, index):
         # obtém o caminho de um arquivo clicado na file tree
         # e se for uma collection válida, atualiza a visualização pra ela

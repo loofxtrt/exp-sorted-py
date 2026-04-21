@@ -31,6 +31,8 @@ def extract_video_info(url: str, ytdl: YoutubeDL) -> dict | None :
     usa a api do yt-dlp pra extrair dinamicamente os dados de um vídeo
     por fazer uso da api, deve ser evitada se a info já existir no cache
 
+    ESSES DADOS NÃO SÃO NORMALIZADOS, ELES SÃO OS BRUTOS DO YT-DLP
+
     args:
         url:
             url do vídeo a ser consultado

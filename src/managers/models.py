@@ -110,7 +110,7 @@ class Collection:
     id: str
     version: str
     created_at: str
-    entries: list[Entry]
+    entries: dict[str, Entry]
     file: Path
 
     @property
@@ -140,9 +140,10 @@ class Collection:
                 dicionário contendo os dados da collection e suas entries
         """
         
-        entries = []
-        for v in data.get('entries', {}).values():
-            entries.append(Entry.from_dict(v))
+        entries = { }
+        for e in data.get('entries', {}).values():
+            entry = Entry.from_dict(e)
+            entries[entry.id] = entry
 
         return cls(
             id=data.get('id'),
@@ -153,9 +154,9 @@ class Collection:
         )
 
     def to_dict(self):
-        entries = []
-        for e in self.entries:
-            entries.append(e.to_dict())
+        entries = {}
+        for e in self.entries.values():
+            entries[e.id] = e.to_dict()
 
         return {
             'id': self.id,
@@ -180,15 +181,15 @@ class Collection:
         return cls.from_dict(data, file)
     
     def write_entry(self, entry: Entry):
-        # atualiza a memória primeiro
-        self.entries.append(entry)
-        
-        # TODO: talvez mover a conversão pra dict pra fora da func
-        # pra evitar repetições em loops for/múltiplas adições
-        data = self.to_dict()
-        
-        data[entry.id] = entry.to_dict()
-        json_io.write_json(self.file, data)
+        # atualiza a memória primeiro, inserindo a entry nova
+        self.entries[entry.id] = entry
+
+        # converte os dados já atualizados e reescreve eles
+        json_io.write_json(self.file, self.to_dict())
+    
+    def erase_entry(self, entry_id: str):
+        self.entries.pop(entry_id, None)
+        json_io.write_json(self.file, self.to_dict())
 
 
 
