@@ -3,6 +3,9 @@ from dataclasses import dataclass
 from . import utils
 
 
+# TODO: em vez de uploader, deve ser o handler do canal
+
+
 @dataclass
 class Video:
     """
@@ -24,7 +27,7 @@ class Video:
     like_count: int
     comment_count: int
     thumbnail: str
-    thumbnails: list[str]
+    thumbnails: list[dict]
 
     @property
     def view_count_formatted(self):
@@ -65,8 +68,8 @@ class Video:
         # filtra as thumbnails mostrando só as relevantes
         # e que tenham mudança perceptível de tamanho/qualidade
         #
-        # thumbnails que são só frames do vídeo
-        # ou são só versões webp equivalentes a um png idêntico, não entram
+        # thumbnails que são só frames aleatórios do vídeo
+        # ou que são só versões webp equivalentes a um png idêntico, não entram
         thumbnails = []
         for t in data.get('thumbnails'):
             url = t.get('url')
@@ -77,6 +80,7 @@ class Video:
 
             if '/mqdefault' in url:
                 resolution_name = 'mqdefault'
+            # TODO: não mudar os dados da thumb, só adicionar get_thumbnail(res: mq)
             # maxres quase sempre é idêntico ao 'thumbnail' principal
             # elif '/maxresdefault' in url:
                 # resolution_name = 'maxresdefault'
@@ -85,6 +89,8 @@ class Video:
             # elif '/hq720' in url:
             #     resolution_name = 'hq720'
             
+            # se a thumbnail não teve a resolução identificada
+            # com clareza, é melhor não inserir ela na lista final
             if resolution_name is None:
                 continue
             

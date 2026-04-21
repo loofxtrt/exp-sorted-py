@@ -115,19 +115,21 @@ class YouTubeModule(Module):
         widget = QWidget()
         widget.setLayout(layout)
 
+        # thumbnail
         thumb_label = QLabel()
         pixmap = QPixmap(str(self.get_thumbnail(data)))
         thumb_label.setPixmap(pixmap.scaled(120, 90, Qt.AspectRatioMode.KeepAspectRatio))
         layout.addWidget(thumb_label)
         
-        labels = [
-            QLabel(video.title),
-            QLabel(video.uploader),
-            QLabel(video.view_count_formatted),
-            QLabel(video.upload_date_formatted)
-        ]
-        for l in labels:
-            layout.addWidget(l)
+        right_layout = QVBoxLayout()
+        right_layout.addWidget(QLabel(video.title))
+        meta_layout = QHBoxLayout()
+        meta_layout.addWidget(QLabel(video.uploader))
+        meta_layout.addWidget(QLabel(video.view_count_formatted))
+        meta_layout.addWidget(QLabel(video.upload_date_formatted))
+        right_layout.addLayout(meta_layout)
+        layout.addLayout(right_layout)
+        layout.addStretch()
 
         item = QListWidgetItem()
         item.setData(Qt.ItemDataRole.UserRole, entry.id)
