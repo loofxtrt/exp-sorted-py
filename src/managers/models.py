@@ -80,6 +80,25 @@ class Entry:
     type: str
     reference: str
 
+    @classmethod
+    def from_dict(cls, data: dict):
+        return cls(
+            id=data.get('id'),
+            created_at=data.get('created_at'),
+            module=data.get('module'),
+            type=data.get('type'),
+            reference=data.get('reference')
+        )
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'created_at': self.created_at,
+            'module': self.module,
+            'type': self.type,
+            'reference': self.reference
+        }
+
 
 @dataclass
 class Collection:
@@ -92,7 +111,7 @@ class Collection:
     version: str
     created_at: str
     entries: list[Entry]
-    # file: Path
+    file: Path
 
     @property
     def name(self):
@@ -101,8 +120,7 @@ class Collection:
         isso é sempre o nome do arquivo sem a extensão
         """
         
-        return 'lorem ipsum'
-        # return self.file.stem
+        return self.file.stem
 
     @property
     def entry_count(self):
@@ -113,7 +131,7 @@ class Collection:
         return len(self.entries)
 
     @classmethod
-    def from_dict(cls, data: dict):
+    def from_dict(cls, data: dict, file: Path):
         """
         cria uma collection a partir de um dicionário
 
@@ -124,22 +142,27 @@ class Collection:
         
         entries = []
         for v in data.get('entries', {}).values():
-            entries.append(
-                Entry(
-                    id=v.get('id'),
-                    created_at=v.get('created_at'),
-                    module=v.get('module'),
-                    type=v.get('type'),
-                    reference=v.get('reference')
-                )
-            )
+            entries.append(Entry.from_dict(v))
 
         return cls(
             id=data.get('id'),
             version=data.get('version'),
             created_at=data.get('created_at'),
-            entries=entries
+            entries=entries,
+            file=file
         )
+
+    def to_dict(self):
+        entries = []
+        for e in self.entries:
+            entries.append(e.to_dict())
+
+        return {
+            'id': self.id,
+            'version': self.version,
+            'created_at': self.created_at,
+            'entries': entries
+        }
     
     @classmethod
     def from_file(cls, file: Path):
@@ -154,7 +177,19 @@ class Collection:
         
         # TODO: validação mais rigorosa com base na chave type
         data = json_io.read_json(file)
-        return cls.from_dict(data)
+        return cls.from_dict(data, file)
+    
+    def write_entry(self, entry: Entry):
+        # atualiza a memória primeiro
+        self.entries.append(entry)
+        
+        # TODO: talvez mover a conversão pra dict pra fora da func
+        # pra evitar repetições em loops for/múltiplas adições
+        data = self.to_dict()
+        
+        data[entry.id] = entry.to_dict()
+        json_io.write_json(self.file, data)
+
 
 
 class Module:

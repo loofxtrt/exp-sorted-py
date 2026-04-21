@@ -4,7 +4,7 @@ from PyQt6.QtWidgets import (
     QApplication, QMainWindow,
     QTableWidget, QTableWidgetItem, QAbstractItemView,
     QListWidget, QListWidgetItem,
-    QPushButton, QLineEdit, QLabel, QFileDialog, QInputDialog,
+    QPushButton, QLineEdit, QLabel, QFileDialog, QInputDialog, QComboBox,
     QWidget, QVBoxLayout, QHBoxLayout, QTreeWidget, QTreeView
 )
 from PyQt6.QtGui import QFileSystemModel, QFont, QIcon, QPixmap
@@ -33,10 +33,14 @@ class MainWindow(QMainWindow):
         self.button_remove = QPushButton('Remove')
         self.button_move = QPushButton('Move')
         self.button_copy = QPushButton('Copy')
+        self.button_edit = QPushButton('Edit')
 
         self.button_remove.clicked.connect(self.action_remove)
         self.button_insert.clicked.connect(self.action_insert)
         self.button_move.clicked.connect(self.action_move)
+
+        self.combo_box_type = QComboBox()
+        self.combo_box_type.setCurrentText('youtube.video')
 
         self.input_insert = QLineEdit()
         
@@ -62,14 +66,14 @@ class MainWindow(QMainWindow):
 
         # file tree
         self.root = str(root) # carregar o último root que foi usado
-        self.button_root = QPushButton('Pick root')
+        self.button_root = QPushButton('Change vault')
         self.button_root.clicked.connect(self.action_pick_root)
         
         self.model = None # tem que ser self pq é importante pra operações com a file tree
         self.file_tree = self.compose_file_tree()
         self.file_tree.clicked.connect(self.action_change_collection)
 
-        self.button_create = QPushButton('+')
+        self.button_create = QPushButton('New collection')
         self.button_create.clicked.connect(self.action_create_collection)
 
         # definir o widget central
@@ -88,9 +92,9 @@ class MainWindow(QMainWindow):
         widget_sidebar.setMaximumWidth(350) # é definido no widget inteiro, não só na file tree
         sidebar = QVBoxLayout(widget_sidebar)
 
-        sidebar.addWidget(self.button_root)
         sidebar.addWidget(self.file_tree)
         sidebar.addWidget(self.button_create)
+        sidebar.addWidget(self.button_root)
 
         # layout, definir o que vai estar na horizontal
         # ex: sidebar, file tree, contents etc.
@@ -117,6 +121,7 @@ class MainWindow(QMainWindow):
         vbox_control_panel = QVBoxLayout()
 
         hbox_insert = QHBoxLayout()
+        hbox_insert.addWidget(self.combo_box_type)
         hbox_insert.addWidget(self.input_insert)
         hbox_insert.addWidget(self.button_insert)
 
@@ -177,9 +182,13 @@ class MainWindow(QMainWindow):
         # atualiza os dados exibidos sobre a collection
         self.label_title.setText(self.collection.name)
         self.label_entry_count.setText(str(self.collection.entry_count))
+    
+    def get_selected_ids(self):
+        items = self.qlist.selectedItems()
+        return [i.data(Qt.ItemDataRole.UserRole) for i in items]
 
     def action_remove(self):
-        ids = get_selected_ids(self.table)
+        ids = self.get_selected_ids()
         for i in ids:
             manager.remove_entry(self.collection_file, i)
         
@@ -202,7 +211,7 @@ class MainWindow(QMainWindow):
 
         # se o destino for do mesmo tipo que a collection atual, é uma moção válida
         if utils.file_collection_type_matches('videos', dest):
-            ids = get_selected_ids(self.table)
+            ids = self.get_selected_ids()
             for i in ids:
                 manager.move_entry(
                     src_collection=self.collection_file,
