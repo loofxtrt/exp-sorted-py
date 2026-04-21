@@ -97,42 +97,29 @@ def download_thumbnail_to_cache(video_data: dict, vault: Vault):
     se o download dos bytes falhar, nada é salvo no disco
 
     vai sempre tentar obter uma thumbnail com resolução menor
-    antes de ir pra maior como fallback
-
-    se não existir uma maior dentro da lista 'thumbnails',
-    usa a thumbnail principal como segundo fallback
-
-    É ESPERADO QUE ESSA LISTA JÁ TENHA SIDO NORMALIZADA PELO MODULO
-    E QUE NÃO SEJA A LISTA BRUTA QUE O YT-DLP RETORNA
-    
-    a principal e a maior normalmente já são as mesmas,
-    mas é seguro confiar na 'thumbnail' como fonte da verdade
+    antes de ir pra maior (a padrão) como fallback
 
     args:
         video_data:
             dados do vídeo contendo o id dele e a url da thumbnail
-
+            ESSA FUNÇÃO ESPERA DADOS JÁ NORMALIZADOS, NÃO OS BRUTOS DO YT-DLP
+        
         vault:
             instância do vault onde o arquivo vai ser salvo
     """
     
-    thumbnail_url = None
+    url = None
     
-    thumbnails = video_data.get('thumbnails')
-    for t in thumbnails:
-        if t.get('resolution_name') == 'mqdefault':
-            logger.info('thumbnail mq encontrada')
-            thumbnail_url = t.get('url')
-        # maxres quase sempre é idêntico ao 'thumbnail' principal
-        # elif t.get('resolution_name') == 'maxresdefault':
-        #     logger.info('thumbnail maxres encontrada')
-        #     thumbnail_url = t.get('url')
+    thumbnail_mq = video_data.get('thumbnail_mq')
+    if thumbnail_mq is not None:
+        logger.info('thumbnail mq encontrada')
+        url = thumbnail_mq
 
-    if thumbnail_url is None:
+    if url is None:
         logger.info('usando thumbnail padrão')
-        thumbnail_url = video_data.get('thumbnail')
+        url = video_data.get('thumbnail')
 
-    content = download_thumbnail_bytes(thumbnail_url)
+    content = download_thumbnail_bytes(url)
     if content:
         dest = _get_thumbnail_path(video_data.get('id'), vault)
         with dest.open('wb') as f:

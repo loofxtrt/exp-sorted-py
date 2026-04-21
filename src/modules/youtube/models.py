@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Optional
 
 from . import utils
 
@@ -27,7 +28,7 @@ class Video:
     like_count: int
     comment_count: int
     thumbnail: str
-    thumbnails: list[dict]
+    thumbnail_mq: Optional[str]
 
     @property
     def view_count_formatted(self):
@@ -55,52 +56,40 @@ class Video:
         extrai e normaliza os dados crus vindos do youtube-dl
 
         o yt-dlp retorna muitos, então serve pra filtrar o que é
-        realmente relevante nesse contexto 
+        realmente relevante nesse contexto
 
         args:
             data:
-                dados crus vindos do youtube-dl
+                dados brutos vindos do youtube-dl
 
         returns:
             dicionário normalizado no formato interno do sistema
         """
 
-        # filtra as thumbnails mostrando só as relevantes
-        # e que tenham mudança perceptível de tamanho/qualidade
+        # filtra as thumbnails mantendo apenas as realmente úteis
+        # ignora:
+        # - versões redundantes (ex: webp idêntico a png)
+        # - frames aleatórios do vídeo (as com nome de 0, 1, 2 etc.)
+        # - resoluções sem mudança perceptível de qualidade
         #
-        # thumbnails que são só frames aleatórios do vídeo
-        # ou que são só versões webp equivalentes a um png idêntico, não entram
-        thumbnails = []
-        for t in data.get('thumbnails'):
+        # no contexto atual, só a mqdefault é relevante:
+        # - maxresdefault quase sempre é igual à thumbnail principal
+        # - hq720 geralmente não traz diferença significativa em relação à maxres
+        #
+        # outras resoluções poderiam ser obtidas da mesma forma que a mqdefault,
+        # apenas verificando padrões na url (ex: '/maxresdefault', '/hq720', etc)
+        thumbnail_mq = None
+
+        for t in data.get('thumbnails', []):
             url = t.get('url')
-            resolution_name = None
             
-            if '.webp' in url:
+            if not url or '.webp' in url:
                 continue
 
             if '/mqdefault' in url:
-                resolution_name = 'mqdefault'
-            # TODO: não mudar os dados da thumb, só adicionar get_thumbnail(res: mq)
-            # maxres quase sempre é idêntico ao 'thumbnail' principal
-            # elif '/maxresdefault' in url:
-                # resolution_name = 'maxresdefault'
-            # hq720 não tem diferença grande comparado ao maxres
-            # na maioria das vezes, então por enquanto não precisa
-            # elif '/hq720' in url:
-            #     resolution_name = 'hq720'
+                thumbnail_mq = url
+                break
             
-            # se a thumbnail não teve a resolução identificada
-            # com clareza, é melhor não inserir ela na lista final
-            if resolution_name is None:
-                continue
-            
-            thumbnails.append(
-                {
-                    'url': url,
-                    'resolution_name': resolution_name
-                }
-            )
-
         return {
             'id': data.get('id'),
             'title': data.get('title'),
@@ -112,13 +101,14 @@ class Video:
             'like_count': data.get('like_count'),
             'comment_count': data.get('comment_count'),
             'thumbnail': data.get('thumbnail'),
-            'thumbnails': thumbnails
+            'thumbnail_mq': thumbnail_mq
         }
 
     @classmethod
     def from_dict(cls, data: dict):
         """
         cria uma instância de Video a partir de um dicionário
+        ESSA FUNÇÃO ESPERA DADOS JÁ NORMALIZADOS, NÃO OS BRUTOS DO YT-DLP
 
         args:
             data:
@@ -139,7 +129,7 @@ class Video:
             like_count=data.get('like_count'),
             comment_count=data.get('comment_count'),
             thumbnail=data.get('thumbnail'),
-            thumbnails=data.get('thumbnails')
+            thumbnail_mq=data.get('thumbnail_mq')
         )
     
     def to_dict(self):
@@ -159,5 +149,5 @@ class Video:
             'like_count': self.like_count,
             'comment_count': self.comment_count,
             'thumbnail': self.thumbnail,
-            'thumbnails': self.thumbnails
+            'thumbnail_mq': self.thumbnail_mq
         }
