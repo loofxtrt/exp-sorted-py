@@ -209,7 +209,7 @@ class Module:
 
     args:
         id:
-            nome único do plugin dentro do vault (ex: "youtube", "notes", etc)
+            nome único do plugin dentro do vault (ex: "youtube", "core" etc.)
 
         vault:
             instância do Vault onde esse plugin está rodando
@@ -247,3 +247,27 @@ class Module:
             return {}
     
         return json_io.read_json(self.manifest_file)
+    
+    # TODO
+    def build_entry_widget(self, entry: Entry):
+        pass
+    
+    def can_handle_entry(self, entry: Entry):
+        pass
+    
+    def receive_url(self, url: str):
+        pass
+
+# TODO: documentação
+class ModuleRegistry:
+    def __init__(self):
+        self.modules: list[Module] = []
+    
+    def register(self, module):
+        self.modules.append(module)
+    
+    def get_for_entry(self, entry: Entry):
+        for m in self.modules:
+            if m.can_handle_entry(entry):
+                return m
+        return None

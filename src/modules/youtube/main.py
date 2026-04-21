@@ -24,6 +24,9 @@ class YouTubeModule(Module):
 
         self.ytdl = instance_ytdl()
 
+    def can_handle_entry(self, entry: Entry):
+        return entry.module == self.id and entry.type == 'video'
+
     def get_video(self, video_id: str):
         """
         busca os dados de um vídeo

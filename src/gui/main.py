@@ -11,7 +11,7 @@ from PyQt6.QtGui import QFileSystemModel, QFont, QIcon, QPixmap
 from PyQt6.QtCore import Qt, QSize
 
 from ..utils.generic import generate_random_id, get_iso_datetime
-from ..managers.models import Collection, Vault, Entry
+from ..managers.models import Collection, Vault, Entry, ModuleRegistry
 from ..modules.youtube.main import YouTubeModule
 from ..modules.youtube.api import extract_video_info, instance_ytdl
 
@@ -42,7 +42,8 @@ class MainWindow(QMainWindow):
         super().__init__()
 
         # FIXME: TEMPORÁRIO
-        self.youtube = YouTubeModule(vault=Vault(root))
+        self.module_registry = ModuleRegistry()
+        self.module_registry.register(YouTubeModule(vault=Vault(root)))
     
         # dados e api
         self.scol = scol
@@ -61,8 +62,9 @@ class MainWindow(QMainWindow):
         self.button_insert.clicked.connect(self.action_insert)
         self.button_move.clicked.connect(self.action_move)
 
+        # TODO
         self.combo_box_type = QComboBox()
-        self.combo_box_type.setCurrentText('youtube.video')
+        #self.combo_box_type.setCurrentText('youtube.video')
 
         self.input_insert = QLineEdit()
         
@@ -186,19 +188,22 @@ class MainWindow(QMainWindow):
         
         entries = self.collection.entries
         for e in entries.values():
-            # FIXME: TEMPORÁRIO
-            if e.module == 'youtube' and e.type == 'video':
-                # espera o result em vez de desenpacotar de uma vez
-                # pra não quebrar com 'cannot unpack non-iterable NoneType object'
-                result = self.youtube.build_entry_widget(e)
-                if not result:
-                    continue
-                item, widget = result
+            # tenta obter o módulo certo pra lidar com essa entry
+            module = self.module_registry.get_for_entry(e)
+            if not module:
+                continue
             
-                self.qlist.addItem(item)
-                self.qlist.setItemWidget(item, widget)
+            # espera o result em vez de desenpacotar de uma vez
+            # pra não quebrar com 'cannot unpack non-iterable NoneType object'
+            result = module.build_entry_widget(e)
+            if not result:
+                continue
+            item, widget = result
+        
+            self.qlist.addItem(item)
+            self.qlist.setItemWidget(item, widget)
 
-                print('adicionado')
+            print('adicionado')
 
     def load_info_labels(self):
         # atualiza os dados exibidos sobre a collection
@@ -210,6 +215,8 @@ class MainWindow(QMainWindow):
         self.load_info_labels()
 
     def get_selected_ids(self):
+        # espera que todo item tenha um userrole (valor oculto)
+        # que indique qual entry ele representa
         items = self.qlist.selectedItems()
         return [i.data(Qt.ItemDataRole.UserRole) for i in items]
 
@@ -269,10 +276,10 @@ class MainWindow(QMainWindow):
 
         self.scol = dest
         self.collection = Collection.from_file(self.scol)
-        self.load_list_contents()
+        self.controller = Controller(self.collection) # tbm precisa ser atualizado
         #cache.write_last_collection(dest)
 
-        self.load_info_labels()
+        self.refresh()
     
     def action_change_root(self):
         dest = self.input_root.text()
