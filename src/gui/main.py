@@ -224,6 +224,7 @@ class MainWindow(QMainWindow):
         self.controller.erase_entries(self.get_selected_ids())
         self.refresh()
     
+    # TODO
     def action_move(self):
         # promptar o caminho novo pra entrada
         dest, _ = QFileDialog.getOpenFileName(
@@ -281,6 +282,7 @@ class MainWindow(QMainWindow):
 
         self.refresh()
     
+    # TODO
     def action_change_root(self):
         dest = self.input_root.text()
         if not Path(dest).is_dir():
